@@ -11,3 +11,5 @@ django
 ```python
 pip install django djangorestframework
 ```
+
+변경
