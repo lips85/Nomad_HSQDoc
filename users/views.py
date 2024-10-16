@@ -13,15 +13,7 @@ from users.models import User
 from . import serializers
 
 
-class UsersView(APIView):
-    # get all users
-    def get(self, request):
-        all_users = User.objects.all()
-        serializer = serializers.UsersSerializer(
-            all_users,
-            many=True,
-        )
-        return Response(serializer.data)
+class UserRegister(APIView):
 
     # create account
     def post(self, request):
@@ -39,7 +31,7 @@ class UsersView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserView(APIView):
+class UserProfile(APIView):
 
     permission_classes = [IsAuthenticated]
 
