@@ -6,8 +6,6 @@ urlpatterns = [
     path("", views.UsersView.as_view()),
     path("<int:pk>/", views.UserView.as_view()),
     path("password/", views.ChangePassword.as_view()),
-    path("login/", views.LogIn.as_view()),
+    path("login/", views.JWTLogIn.as_view()),
     path("logout/", views.LogOut.as_view()),
-    path("token-login/", obtain_auth_token),
-    path("jwt-login/", views.JWTLogIn.as_view()),
 ]

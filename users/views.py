@@ -88,7 +88,6 @@ class ChangePassword(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    # change password
     def put(self, request):
         user = request.user
         old_password = request.data.get("old_password")
@@ -103,36 +102,6 @@ class ChangePassword(APIView):
             raise ParseError
 
 
-class LogIn(APIView):
-    # login without jwt
-    def post(self, request):
-        username = request.data.get("username")
-        password = request.data.get("password")
-        if not username or not password:
-            raise ParseError
-        user = authenticate(
-            request,
-            username=username,
-            password=password,
-        )
-        if user:
-            login(request, user)
-            return Response({"ok": "Welcome!"})
-        else:
-            return Response({"error": "wrong password"})
-
-
-# logout
-class LogOut(APIView):
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        logout(request)
-        return Response({"ok": "bye!"})
-
-
-# login with jwt
 class JWTLogIn(APIView):
     def post(self, request):
         username = request.data.get("username")
@@ -153,3 +122,12 @@ class JWTLogIn(APIView):
             return Response({"token": token})
         else:
             return Response({"error": "wrong password"})
+
+
+class LogOut(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        logout(request)
+        return Response({"ok": "bye!"})
