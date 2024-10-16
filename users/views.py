@@ -1,4 +1,6 @@
 import jwt
+import datetime
+
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.response import Response
@@ -114,12 +116,20 @@ class JWTLogIn(APIView):
             password=password,
         )
         if user:
+            payload = {
+                "username": user.username,
+                "pk": user.pk,
+                "exp": datetime.datetime.now() + datetime.timedelta(days=1),
+                "iat": datetime.datetime.now(),
+            }
             token = jwt.encode(
-                {"pk": user.pk},
+                payload,
                 settings.SECRET_KEY,
                 algorithm="HS256",
             )
-            return Response({"token": token})
+            response = Response({"ok": "Welcome!"})
+            response.set_cookie(key="jwt", value=token)
+            return response
         else:
             return Response({"error": "wrong password"})
 
@@ -130,4 +140,6 @@ class LogOut(APIView):
 
     def post(self, request):
         logout(request)
-        return Response({"ok": "bye!"})
+        response = Response({"ok": "bye!"})
+        response.delete_cookie("jwt")
+        return response
