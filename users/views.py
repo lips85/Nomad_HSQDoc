@@ -17,9 +17,17 @@ class UserRegister(APIView):
 
     # create account
     def post(self, request):
+        username = request.data.get("username")
         password = request.data.get("password")
-        if not password:
+        if not password or not username:
             raise ParseError
+        # 이미 있는 username이 있는지 확인하고 있으면 에러 반환
+        is_username_exist = User.objects.get(username=username)
+        if is_username_exist:
+            return Response(
+                {"error": "username already exists"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         serializer = serializers.UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -35,39 +43,21 @@ class UserProfile(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    # get user object
-    def get_user(self, pk):
-        try:
-            return User.objects.get(pk=pk)
-        except User.DoesNotExist:
-            raise NotFound
-
     # get user info
-    def get(self, request, pk):
-        serializer = serializers.UserSerializer(self.get_user(pk))
+    def get(self, request):
+        user = request.user
+        serializer = serializers.UserSerializer(user)
         return Response(serializer.data)
 
     # update user info
-    def put(self, request, pk):
-        user = self.get_user(pk)
-        if user != request.user:
-            raise PermissionDenied
+    def put(self, request):
+        user = request.user
         serializer = serializers.UserSerializer(
             user,
             data=request.data,
             partial=True,
         )
         if serializer.is_valid():
-            keys = list(request.data.keys())
-            available_keys = ["username", "name", "email", "gender"]
-            for key in keys:
-                if key not in available_keys:
-                    return Response(
-                        {
-                            "error": "Please update from username, name, email, and gender"
-                        },
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
             user = serializer.save()
             serializer = serializers.UserSerializer(user)
             return Response(serializer.data)
@@ -102,12 +92,23 @@ class JWTLogIn(APIView):
         password = request.data.get("password")
         if not username or not password:
             raise ParseError
+        # username이 존재하는지 먼저 확인하고 없으면 에러 반환
+        is_username_exist = User.objects.get("username")
+        if not is_username_exist:
+            return Response(
+                {"error": "wrong username"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # user를 확인하고 없으면 이미 username을 확인했기 때문에 password가 잘못된거다
         user = authenticate(
             request,
             username=username,
             password=password,
         )
         if user:
+            # payload: 토큰으로 보낼 데이터
+            # exp: jwt 토큰 유효 시간 -> 하루
+            # iat: jwt 토큰 생성된 시간
             payload = {
                 "username": user.username,
                 "pk": user.pk,
@@ -120,10 +121,14 @@ class JWTLogIn(APIView):
                 algorithm="HS256",
             )
             response = Response({"ok": "Welcome!"})
+            # jwt token을 쿠키에 넣음
             response.set_cookie(key="jwt", value=token)
             return response
         else:
-            return Response({"error": "wrong password"})
+            return Response(
+                {"error": "wrong password"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class LogOut(APIView):
@@ -133,5 +138,6 @@ class LogOut(APIView):
     def post(self, request):
         logout(request)
         response = Response({"ok": "bye!"})
+        # jwt 토큰 쿠키 삭제
         response.delete_cookie("jwt")
         return response

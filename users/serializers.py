@@ -21,8 +21,8 @@ class UserSerializer(ModelSerializer):
             "id",
             "is_staff",
             "is_active",
-            "first_name",
-            "last_name",
+            "last_login",
+            "date_joined",
             "groups",
             "user_permissions",
         )
