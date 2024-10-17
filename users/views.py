@@ -22,12 +22,15 @@ class UserRegister(APIView):
         if not password or not username:
             raise ParseError
         # 이미 있는 username이 있는지 확인하고 있으면 에러 반환
-        is_username_exist = User.objects.get(username=username)
-        if is_username_exist:
-            return Response(
-                {"error": "username already exists"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        try:
+            is_username_exist = User.objects.get(username=username)
+            if is_username_exist:
+                return Response(
+                    {"error": "username already exists"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except:
+            is_username_exist = False
         serializer = serializers.UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -79,11 +82,22 @@ class ChangePassword(APIView):
         if not old_password or not new_password:
             raise ParseError
         if user.check_password(old_password):
-            user.set_password(new_password)
-            user.save()
-            return Response(status=status.HTTP_200_OK)
+            if old_password != new_password:
+                user.set_password(new_password)
+                user.save()
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {
+                        "error": "Old password and new password is same. Write proper new password"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
-            raise ParseError
+            return Response(
+                {"error": "Old password is wrong"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class JWTLogIn(APIView):
@@ -93,8 +107,9 @@ class JWTLogIn(APIView):
         if not username or not password:
             raise ParseError
         # username이 존재하는지 먼저 확인하고 없으면 에러 반환
-        is_username_exist = User.objects.get("username")
-        if not is_username_exist:
+        try:
+            User.objects.get(username=username)
+        except:
             return Response(
                 {"error": "wrong username"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -120,7 +135,7 @@ class JWTLogIn(APIView):
                 settings.SECRET_KEY,
                 algorithm="HS256",
             )
-            response = Response({"ok": "Welcome!"})
+            response = Response({"token": token})
             # jwt token을 쿠키에 넣음
             response.set_cookie(key="jwt", value=token)
             return response
