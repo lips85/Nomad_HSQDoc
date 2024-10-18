@@ -3,13 +3,15 @@ import requests
 
 URL = "http://127.0.0.1:8000/api/v1/users/"
 
-# jwt token을 담기 위한 session state
-if "jwt" not in st.session_state:
-    st.session_state.jwt = None
+for key, default in [
+    # jwt token을 담기 위한 session state
+    ("jwt", None),
+    # 로그인 했는지를 나타내는 session state
+    ("is_login", False),
+]:
+    if key not in st.session_state:
+        st.session_state[key] = default
 
-# 로그인 했는지를 나타내는 session state
-if "is_login" not in st.session_state:
-    st.session_state.is_login = False
 
 st.set_page_config(
     page_title="HSQDoc",
