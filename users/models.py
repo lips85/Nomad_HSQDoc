@@ -9,17 +9,20 @@ class User(AbstractUser):
 
     first_name = models.CharField(
         max_length=150,
-        editable=False,
+        default="",
+        blank=True,
     )
     last_name = models.CharField(
         max_length=150,
-        editable=False,
-    )
-    name = models.CharField(
-        max_length=150,
         default="",
+        blank=True,
     )
+    # name = models.CharField(
+    #     max_length=150,
+    #     default="",
+    # )
     gender = models.CharField(
         max_length=10,
         choices=GenderChoices.choices,
+        default="",
     )
