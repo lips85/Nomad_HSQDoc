@@ -12,6 +12,8 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from users.models import User
 from . import serializers
 
+STREAMLIT_URL = "http://localhost:8501/"
+
 
 class UserRegister(APIView):
 
@@ -20,13 +22,16 @@ class UserRegister(APIView):
         username = request.data.get("username")
         password = request.data.get("password")
         if not password or not username:
-            raise ParseError
+            return Response(
+                {"error": "Username and Password is Required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         # 이미 있는 username이 있는지 확인하고 있으면 에러 반환
         try:
             is_username_exist = User.objects.get(username=username)
             if is_username_exist:
                 return Response(
-                    {"error": "username already exists"},
+                    {"error": "This Username is already used"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         except:
@@ -121,24 +126,12 @@ class JWTLogIn(APIView):
             password=password,
         )
         if user:
-            # payload: 토큰으로 보낼 데이터
-            # exp: jwt 토큰 유효 시간 -> 하루
-            # iat: jwt 토큰 생성된 시간
-            payload = {
-                "username": user.username,
-                "pk": user.pk,
-                "exp": datetime.datetime.now() + datetime.timedelta(days=1),
-                "iat": datetime.datetime.now(),
-            }
             token = jwt.encode(
-                payload,
+                {"pk": user.pk},
                 settings.SECRET_KEY,
                 algorithm="HS256",
             )
-            response = Response({"token": token})
-            # jwt token을 쿠키에 넣음
-            response.set_cookie(key="jwt", value=token)
-            return response
+            return Response({"token": token})
         else:
             return Response(
                 {"error": "wrong password"},
@@ -153,6 +146,4 @@ class LogOut(APIView):
     def post(self, request):
         logout(request)
         response = Response({"ok": "bye!"})
-        # jwt 토큰 쿠키 삭제
-        response.delete_cookie("jwt")
         return response

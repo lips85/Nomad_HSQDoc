@@ -10,10 +10,12 @@ class User(AbstractUser):
     first_name = models.CharField(
         max_length=150,
         default="",
+        blank=True,
     )
     last_name = models.CharField(
         max_length=150,
         default="",
+        blank=True,
     )
     # name = models.CharField(
     #     max_length=150,

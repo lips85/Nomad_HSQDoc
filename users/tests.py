@@ -81,6 +81,21 @@ class TestUserRegister(APITestCase):
             400,
         )
 
+        # 비어있는 정보 가지고 계정 생성 시도
+        response = self.client.post(
+            self.URL,
+            data={
+                "username": "test_blank",
+                "password": "test_blank_password",
+                "email": "",
+                "first_name": "",
+                "last_name": "",
+                "gender": "",
+            },
+        )
+        print(response.json())
+        print(response.status_code)
+
         # 모든 정보를 가지고 계정 생성 시도
         test_username_2 = "test_username_2"
         test_password_2 = "test_password_2"
@@ -465,13 +480,12 @@ class TestJWTLogin(APITestCase):
             response.status_code,
             200,
         )
-        # cookie에 jwt 토큰이 생성된 토큰이랑 같은지 테스트
-        self.assertEquals(
-            response.cookies["jwt"].value,
-            response.json()["token"],
-        )
         # 로그인 후 profile 볼 수 있는지 테스트
-        response = self.client.get(self.URL_PROFILE)
+        # headers로 jwt token 전달
+        response = self.client.get(
+            self.URL_PROFILE,
+            headers={"jwt": response.json()["token"]},
+        )
         self.assertEqual(
             response.status_code,
             200,
@@ -501,7 +515,7 @@ class TestLogOut(APITestCase):
             403,
         )
 
-        # 로그인하고 로그아웃 얻기 시도
+        # 로그인하고 로그아웃 시도
         response = self.client.post(
             self.URL_LOGIN,
             data={
@@ -514,13 +528,11 @@ class TestLogOut(APITestCase):
             200,
         )
 
-        response = self.client.post(self.URL_LOGOUT)
+        response = self.client.post(
+            self.URL_LOGOUT,
+            headers={"jwt": response.json()["token"]},
+        )
         self.assertEqual(
             response.status_code,
             200,
-        )
-        # 로그아웃하면 jwt token이 쿠키에 없어야 한다
-        self.assertEqual(
-            response.cookies["jwt"].value,
-            "",
         )
