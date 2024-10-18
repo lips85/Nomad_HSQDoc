@@ -12,10 +12,10 @@ class CustomUserAdmin(UserAdmin):
                 "fields": (
                     "username",
                     "password",
-                    "name",
+                    "first_name",
+                    "last_name",
                     "email",
                     "gender",
-                    "language",
                 ),
                 "classes": ("wide",),
             },
@@ -41,4 +41,4 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
-    list_display = ("username", "email", "name")
+    list_display = ("username", "email")
