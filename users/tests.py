@@ -93,8 +93,6 @@ class TestUserRegister(APITestCase):
                 "gender": "",
             },
         )
-        print(response.json())
-        print(response.status_code)
 
         # 모든 정보를 가지고 계정 생성 시도
         test_username_2 = "test_username_2"
