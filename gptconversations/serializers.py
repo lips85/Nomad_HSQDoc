@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from .models import Conversation
-from users.serializers import UsersSerializer
-from gptmessages.serializers import MessagesIdListSerializer
+from users.serializers import UserConversationSerializer
 
 
 class ConversationsSerializer(serializers.ModelSerializer):
@@ -13,7 +12,7 @@ class ConversationsSerializer(serializers.ModelSerializer):
 
 
 class ConversationSerializer(serializers.ModelSerializer):
-    owner = UsersSerializer(read_only=True)
+    owner = UserConversationSerializer(read_only=True)
 
     class Meta:
         model = Conversation
