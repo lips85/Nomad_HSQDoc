@@ -7,6 +7,7 @@ class Conversation(CommonModel):
     owner = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
+        related_name="conversations",
     )
 
     # later change to file

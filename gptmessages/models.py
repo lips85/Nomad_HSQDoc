@@ -7,6 +7,7 @@ class Message(CommonModel):
     conversation = models.ForeignKey(
         "gptconversations.Conversation",
         on_delete=models.CASCADE,
+        related_name="messages",
     )
 
     user_message = models.TextField()
