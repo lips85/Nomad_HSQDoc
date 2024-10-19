@@ -8,5 +8,11 @@ class ConversationAdmin(admin.ModelAdmin):
     list_display = (
         "owner",
         "pdf",
+        "created_at",
+        "updated_at",
     )
-    list_filter = ("owner",)
+    list_filter = (
+        "owner",
+        "created_at",
+        "updated_at",
+    )

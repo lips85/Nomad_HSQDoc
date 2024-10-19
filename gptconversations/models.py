@@ -9,7 +9,10 @@ class Conversation(CommonModel):
         on_delete=models.CASCADE,
     )
 
-    pdf = models.FileField()
+    # later change to file
+    pdf = models.CharField(
+        max_length=150,
+    )
 
-    # def __str__(self):
-    #     return self.name
+    def __str__(self):
+        return f"{self.owner}'s {self.pdf} conversation"
