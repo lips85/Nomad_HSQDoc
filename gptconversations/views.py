@@ -39,8 +39,7 @@ class ConversationsList(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ConversationMessages(APIView):
-
+class ConversationDetail(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_conversation(self, id):
@@ -51,29 +50,22 @@ class ConversationMessages(APIView):
 
     def get(self, request, id):
         conversation = self.get_conversation(id)
-        serializer = serializers.ConversationMessagesSerializer(conversation)
+        serializer = serializers.ConversationSerializer(conversation)
         return Response(serializer.data)
 
     def put(self, request, id):
         conversation = self.get_conversation(id)
         if conversation.owner != request.user:
             raise PermissionDenied
-        serializer = serializers.ConversationMessagesSerializer(
+        serializer = serializers.ConversationSerializer(
             conversation,
             data=request.data,
             partial=True,
         )
         if serializer.is_valid():
             updated_conversation = serializer.save()
-            serializer = serializers.ConversationMessagesSerializer(
-                updated_conversation
-            )
+            serializer = serializers.ConversationSerializer(updated_conversation)
             return Response(serializer.data)
-        else:
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
     def delete(self, request, id):
         conversation = self.get_conversation(id)

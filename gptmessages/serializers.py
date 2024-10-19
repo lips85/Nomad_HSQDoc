@@ -3,7 +3,7 @@ from .models import Message
 
 
 class MessagesSerializer(serializers.ModelSerializer):
-    conversation = serializers.CharField()
+    conversation = serializers.CharField(read_only=True)
 
     class Meta:
         model = Message
@@ -13,6 +13,13 @@ class MessagesSerializer(serializers.ModelSerializer):
             "user_message",
             "ai_message",
         )
+
+
+# class MessageSerializer(serializers.ModelSerializer):
+
+#     class Meta:
+#         model = Message
+#         fields = "__all__"
 
 
 class MessagesInConversationSerializer(serializers.ModelSerializer):

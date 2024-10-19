@@ -29,6 +29,7 @@ class ConversationMessagesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conversation
         fields = (
+            "id",
             "title",
             "messages",
         )
