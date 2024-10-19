@@ -15,8 +15,11 @@ class MessagesSerializer(serializers.ModelSerializer):
         )
 
 
-class MessagesIdListSerializer(serializers.ModelSerializer):
+class MessagesInConversationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ("id",)
+        fields = (
+            "user_message",
+            "ai_message",
+        )
