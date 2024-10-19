@@ -7,7 +7,6 @@ class UsersSerializer(ModelSerializer):
         model = User
         fields = (
             "username",
-            "name",
             "email",
         )
 

@@ -12,8 +12,6 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from users.models import User
 from . import serializers
 
-STREAMLIT_URL = "http://localhost:8501/"
-
 
 class UserRegister(APIView):
 

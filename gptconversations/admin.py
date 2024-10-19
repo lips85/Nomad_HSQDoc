@@ -7,7 +7,7 @@ from .models import Conversation
 class ConversationAdmin(admin.ModelAdmin):
     list_display = (
         "owner",
-        "pdf",
+        "title",
         "created_at",
         "updated_at",
     )

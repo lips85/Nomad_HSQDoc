@@ -11,9 +11,9 @@ class Conversation(CommonModel):
     )
 
     # later change to file
-    pdf = models.CharField(
+    title = models.CharField(
         max_length=150,
     )
 
     def __str__(self):
-        return f"{self.owner}'s {self.pdf} conversation"
+        return self.title
