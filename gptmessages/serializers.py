@@ -15,13 +15,6 @@ class MessagesSerializer(serializers.ModelSerializer):
         )
 
 
-# class MessageSerializer(serializers.ModelSerializer):
-
-#     class Meta:
-#         model = Message
-#         fields = "__all__"
-
-
 class MessagesInConversationSerializer(serializers.ModelSerializer):
 
     class Meta:
