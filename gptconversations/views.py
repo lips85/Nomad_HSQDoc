@@ -45,6 +45,8 @@ class ConversationDetail(APIView):
 
     def get(self, request, id):
         conversation = self.get_conversation(id)
+        if conversation.owner != request.user:
+            raise PermissionDenied
         serializer = serializers.ConversationSerializer(conversation)
         return Response(serializer.data)
 
@@ -61,6 +63,11 @@ class ConversationDetail(APIView):
             updated_conversation = serializer.save()
             serializer = serializers.ConversationSerializer(updated_conversation)
             return Response(serializer.data)
+        else:
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     def delete(self, request, id):
         conversation = self.get_conversation(id)
