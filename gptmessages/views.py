@@ -34,6 +34,8 @@ class ConversationMessages(APIView):
 
     def get(self, request, id):
         conversation = self.get_conversation(id)
+        if conversation.owner != request.user:
+            raise PermissionDenied
         messages = conversation.messages.all()
         serializer = serializers.MessagesInConversationSerializer(messages, many=True)
         return Response(serializer.data)
