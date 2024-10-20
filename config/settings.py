@@ -42,6 +42,8 @@ THIRD_PARTY_APPS = [
 
 CUSTOM_APPS = [
     "users.apps.UsersConfig",
+    "gptconversations.apps.GptconversationsConfig",
+    "gptmessages.apps.GptmessagesConfig",
 ]
 
 SYSTEM_APPS = [
