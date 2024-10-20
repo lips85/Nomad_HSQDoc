@@ -260,7 +260,6 @@ xlsxwriter = "3.1.5"
 yarl = "1.9.2"
 zipp = "3.16.2"
 
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

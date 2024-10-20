@@ -1,18 +1,15 @@
 import jwt
-import datetime
 
 from django.conf import settings
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, logout
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.exceptions import ParseError, NotFound, PermissionDenied
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.exceptions import ParseError
+from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
 from . import serializers
-
-STREAMLIT_URL = "http://localhost:8501/"
 
 
 class UserRegister(APIView):
