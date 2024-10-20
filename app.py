@@ -56,8 +56,6 @@ st.set_page_config(
 
 st.title("Welcome to HSQDoc!")
 
-st.subheader("Login to use HSQDoc")
-
 
 # def erase_jwt_token():
 #     st.session_state.jwt = None
@@ -104,61 +102,10 @@ class FileController:
 
 
 # 사이드바 설정
-with st.sidebar:
-    st.file_uploader(
-        "Upload a .txt .pdf or .docx file",
-        type=["pdf", "txt", "docx"],
-        on_change=SaveEnv.save_file,
-        key="file",
-    )
-    if st.session_state["file_check"]:
-        st.success("😄문서가 업로드되었습니다.😄")
-    else:
-        st.warning("문서를 업로드해주세요.")
-    st.divider()
-    st.text_input(
-        "API_KEY 입력",
-        placeholder="sk-...",
-        on_change=SaveEnv.save_api_key,
-        key="api_key",
-    )
-
-    if st.session_state["api_key_check"]:
-        st.success("😄API_KEY가 저장되었습니다.😄")
-    else:
-        st.warning("API_KEY를 넣어주세요.")
-
-    st.button(
-        "hary의 API_KEY (디버그용)",
-        on_click=Debug.my_api_key,
-        key="my_key_button",
-    )
-    st.divider()
-    st.selectbox(
-        "OpenAI Model을 골라주세요.",
-        options=OPENAI_MODEL,
-        on_change=SaveEnv.save_openai_model,
-        key="openai_model",
-    )
-
-    if st.session_state["openai_model_check"]:
-        st.success("😄모델이 선택되었습니다.😄")
-    else:
-        st.warning("모델을 선택해주세요.")
-    st.divider()
-    st.write(
-        """
-        Made by hary, seedjin298.
-        
-        Github
-        https://github.com/lips85/Nomad_HSQDoc
-        """
-    )
 
 
-mode = st.selectbox("Login or Register", ["Login", "Register"])
-
-if not st.session_state["jwt"]:
+if st.session_state["jwt"] is None:
+    mode = st.selectbox("Login or Register", ["Login", "Register"])
     if mode == "Login":
         with st.form(key="login"):
 
@@ -192,7 +139,7 @@ if not st.session_state["jwt"]:
                 elif response.status_code == 400:
                     error_message = response.json()["error"]
                     st.error(error_message)
-    else:
+    elif mode == "Register":
         with st.form(key="register"):
             first_name = st.text_input(
                 "Enter Your First Name",
@@ -244,6 +191,57 @@ if not st.session_state["jwt"]:
                     else:
                         st.error("Register Fail")
 else:
+    with st.sidebar:
+        st.file_uploader(
+            "Upload a .txt .pdf or .docx file",
+            type=["pdf", "txt", "docx"],
+            on_change=SaveEnv.save_file,
+            key="file",
+        )
+        if st.session_state["file_check"]:
+            st.success("😄문서가 업로드되었습니다.😄")
+        else:
+            st.warning("문서를 업로드해주세요.")
+        st.divider()
+        st.text_input(
+            "API_KEY 입력",
+            placeholder="sk-...",
+            on_change=SaveEnv.save_api_key,
+            key="api_key",
+        )
+
+        if st.session_state["api_key_check"]:
+            st.success("😄API_KEY가 저장되었습니다.😄")
+        else:
+            st.warning("API_KEY를 넣어주세요.")
+
+        st.button(
+            "hary의 API_KEY (디버그용)",
+            on_click=Debug.my_api_key,
+            key="my_key_button",
+        )
+        st.divider()
+        st.selectbox(
+            "OpenAI Model을 골라주세요.",
+            options=OPENAI_MODEL,
+            on_change=SaveEnv.save_openai_model,
+            key="openai_model",
+        )
+
+        if st.session_state["openai_model_check"]:
+            st.success("😄모델이 선택되었습니다.😄")
+        else:
+            st.warning("모델을 선택해주세요.")
+        st.divider()
+        st.write(
+            """
+            Made by hary, seedjin298.
+            
+            Github
+            https://github.com/lips85/Nomad_HSQDoc
+            """
+        )
+
     st.write("You are already logged in!")
     st.write("Click to LogOut")
     logout_request = st.button(
