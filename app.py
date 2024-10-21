@@ -269,10 +269,8 @@ else:
             if messages_data.status_code == 200:
                 messages = messages_data.json()
                 for message in messages:
-                    with st.chat_message("human"):
-                        st.markdown(message["user_message"])
-                    with st.chat_message("ai"):
-                        st.markdown(message["ai_message"])
+                    with st.chat_message(message["message_role"]):
+                        st.markdown(message["message_content"])
             else:
                 st.st.error("Please Choose Proper Conversation")
 
