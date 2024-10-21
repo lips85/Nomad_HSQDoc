@@ -39,8 +39,10 @@ for key, default in [
     ("jwt", None),
     # 로그인 했는지를 나타내는 session state
     ("is_login", False),
+    # 현재 유저가 보고 있는 대화방을 나타내는 session state
+    ("conversation_url", None),
     # langchain
-    ("messages", []),
+    ("messages", {}),
     ("api_key", None),
     ("api_key_check", False),
     ("openai_model", "선택해주세요"),
@@ -58,19 +60,6 @@ st.set_page_config(
 )
 
 st.title("Welcome to HSQDoc!")
-
-
-# def erase_jwt_token():
-#     st.session_state.jwt = None
-
-
-# def change_to_login():
-#     st.session_state.is_login = True
-
-
-# def change_to_logout():
-#     st.session_state.is_login = False
-#     erase_jwt_token()
 
 
 class FileController:
@@ -143,7 +132,7 @@ if st.session_state["jwt"] is None:
                     error_message = response.json()["error"]
                     st.error(error_message)
     elif mode == "Register":
-        with st.form(key="register"):
+        with st.form(key="register", clear_on_submit=True):
             first_name = st.text_input(
                 "Enter Your First Name",
             )
@@ -244,6 +233,25 @@ else:
             https://github.com/lips85/Nomad_HSQDoc
             """
         )
+        st.divider()
+        st.write("Click to LogOut")
+        logout_request = st.button(
+            "LogOut",
+            disabled=not st.session_state.is_login,
+        )
+        if logout_request:
+            response = requests.post(
+                USERS_URL + "logout/",
+                headers={"jwt": st.session_state.jwt},
+            )
+            if response.status_code == 200:
+                st.session_state.is_login = False
+                st.session_state.jwt = None
+                # 로그아웃 후 rerun -> 바로 로그인 form이 나타남
+                # st.success("LogOut Success!")
+                st.rerun()
+            else:
+                st.error("Failed to LogOut")
 
     conversations_data = requests.get(
         CONVERSATIONS_URL,
@@ -251,50 +259,63 @@ else:
     )
     if conversations_data.status_code == 200:
         conversations = conversations_data.json()
-        conversations_options = ["Make a Conversation"]
+        conversations_options = ["Create Conversation"]
         for conversation in conversations:
             conversations_options.append(conversation["title"])
         chosen_option = st.selectbox(
-            "Make or Choose a Conversation", conversations_options
+            "Create or Choose a Conversation", conversations_options
         )
-        if chosen_option == "Make a Conversation":
-            st.text_input("Write a Title for Your Conversation With AI")
+        if chosen_option == "Create Conversation":
+            with st.form(key="create_conversation", clear_on_submit=True):
+                new_title = st.text_input(
+                    "Write a Title for Your Conversation With AI",
+                )
+                create_conversation_request = st.form_submit_button(
+                    "Create Conversation",
+                )
+
+                if create_conversation_request:
+                    response = requests.post(
+                        CONVERSATIONS_URL,
+                        headers={"jwt": st.session_state.jwt},
+                        json={
+                            "title": new_title,
+                        },
+                    )
+                    if response.status_code != 200:
+                        error_message = response.json()["error"]
+                        st.error(error_message)
+                    else:
+                        st.rerun()
+
         else:
             chosen_conversation_index = conversations_options.index(chosen_option) - 1
             chosen_conversation_id = conversations[int(chosen_conversation_index)]["id"]
-            messages_data = requests.get(
-                MESSAGES_URL + str(chosen_conversation_id),
-                headers={"jwt": st.session_state.jwt},
+            st.session_state["conversation_url"] = (
+                MESSAGES_URL + str(chosen_conversation_id) + "/"
             )
-            if messages_data.status_code == 200:
-                messages = messages_data.json()
-                for message in messages:
-                    with st.chat_message(message["message_role"]):
-                        st.markdown(message["message_content"])
-            else:
-                st.st.error("Please Choose Proper Conversation")
+
+            if (
+                st.session_state["conversation_url"]
+                not in st.session_state["messages"].keys()
+            ):
+                st.session_state["messages"][st.session_state["conversation_url"]] = []
+                messages_data = requests.get(
+                    st.session_state["conversation_url"],
+                    headers={"jwt": st.session_state.jwt},
+                )
+                if messages_data.status_code == 200:
+                    messages = messages_data.json()
+                    for message in messages:
+                        ChatMemory.save_message(
+                            message["message_content"],
+                            message["message_role"],
+                        )
+                else:
+                    st.error("Please Choose Proper Conversation")
 
     else:
         st.error("Please log in")
-    st.write("You are already logged in!")
-    st.write("Click to LogOut")
-    logout_request = st.button(
-        "LogOut",
-        disabled=not st.session_state.is_login,
-    )
-    if logout_request:
-        response = requests.post(
-            USERS_URL + "logout/",
-            headers={"jwt": st.session_state.jwt},
-        )
-        if response.status_code == 200:
-            st.session_state.is_login = False
-            st.session_state.jwt = None
-            # 로그아웃 후 rerun -> 바로 로그인 form이 나타남
-            # st.success("LogOut Success!")
-            st.rerun()
-        else:
-            st.error("Failed to LogOut")
 
 
 # 메인 로직
@@ -353,7 +374,8 @@ if (
                 )
                 try:
                     with st.chat_message("ai"):
-                        chain.invoke(message)
+                        ai_answer = chain.invoke(message)
+                        ChatMemory.save_message_db(ai_answer.content, "ai")
                 except Exception as e:
                     st.error(f"An error occurred: {e}")
                     st.warning("OPENAI_API_KEY or 모델 선택을 다시 진행해주세요.")

@@ -48,7 +48,7 @@ class ConversationMessages(APIView):
         message_content = request.data.get("message_content")
         if not (message_role and message_content):
             return Response(
-                {"error": "Please Give User and AI Message"},
+                {"error": "Please Give Message Role and Content"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         serializer = serializers.MessagesSerializer(data=request.data)
