@@ -25,6 +25,15 @@ class ConversationsList(APIView):
                 {"error": "Please Write a Title for the Conversation"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        try:
+            is_title_already_used = Conversation.objects.get(title=title)
+            if is_title_already_used:
+                return Response(
+                    {"error": "This Title is already used"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except:
+            is_title_already_used = False
         serializer = serializers.ConversationSerializer(data=request.data)
         if serializer.is_valid():
             conversation = serializer.save(owner=request.user)

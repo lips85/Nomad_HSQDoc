@@ -166,6 +166,21 @@ class TestConversationsList(APITestCase):
             data,
         )
 
+        # 이미 있는 title로 post
+        response = self.client.post(
+            self.URL,
+            data={
+                "title": test_title,
+            },
+            headers={
+                "jwt": self.token,
+            },
+        )
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
 
 class ConversationDetail(APITestCase):
 
