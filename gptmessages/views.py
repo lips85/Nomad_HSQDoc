@@ -44,9 +44,9 @@ class ConversationMessages(APIView):
         conversation = self.get_conversation(id)
         if conversation.owner != request.user:
             raise PermissionDenied
-        user_message = request.data.get("user_message")
-        ai_message = request.data.get("ai_message")
-        if not (user_message and ai_message):
+        message_role = request.data.get("message_role")
+        message_content = request.data.get("message_content")
+        if not (message_role and message_content):
             return Response(
                 {"error": "Please Give User and AI Message"},
                 status=status.HTTP_400_BAD_REQUEST,
