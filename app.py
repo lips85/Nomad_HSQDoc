@@ -26,10 +26,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# backend urls
+
+USERS_URL = "http://127.0.0.1:8000/api/v1/users/"
+CONVERSATIONS_URL = "http://127.0.0.1:8000/api/v1/conversations/"
+MESSAGES_URL = "http://127.0.0.1:8000/api/v1/messages/"
 
 # front 손보기
-
-URL = "http://127.0.0.1:8000/api/v1/users/"
 
 for key, default in [
     # jwt token을 담기 위한 session state
@@ -127,7 +130,7 @@ if st.session_state["jwt"] is None:
                     "username": username,
                     "password": password,
                 }
-                response = requests.post(URL + "login/", json=login_data)
+                response = requests.post(USERS_URL + "login/", json=login_data)
                 if response.status_code == 200:
                     st.session_state.is_login = True
                     token = response.json()["token"]
@@ -182,7 +185,7 @@ if st.session_state["jwt"] is None:
                     "username": username,
                     "password": password,
                 }
-                response = requests.post(URL, json=register_data)
+                response = requests.post(USERS_URL, json=register_data)
                 if response.status_code == 200:
                     st.success("Register Success! Now You can LogIn")
                 else:
@@ -242,6 +245,39 @@ else:
             """
         )
 
+    conversations_data = requests.get(
+        CONVERSATIONS_URL,
+        headers={"jwt": st.session_state.jwt},
+    )
+    if conversations_data.status_code == 200:
+        conversations = conversations_data.json()
+        conversations_options = ["Make a Conversation"]
+        for conversation in conversations:
+            conversations_options.append(conversation["title"])
+        chosen_option = st.selectbox(
+            "Make or Choose a Conversation", conversations_options
+        )
+        if chosen_option == "Make a Conversation":
+            st.text_input("Write a Title for Your Conversation With AI")
+        else:
+            chosen_conversation_index = conversations_options.index(chosen_option) - 1
+            chosen_conversation_id = conversations[int(chosen_conversation_index)]["id"]
+            messages_data = requests.get(
+                MESSAGES_URL + str(chosen_conversation_id),
+                headers={"jwt": st.session_state.jwt},
+            )
+            if messages_data.status_code == 200:
+                messages = messages_data.json()
+                for message in messages:
+                    with st.chat_message("human"):
+                        st.markdown(message["user_message"])
+                    with st.chat_message("ai"):
+                        st.markdown(message["ai_message"])
+            else:
+                st.st.error("Please Choose Proper Conversation")
+
+    else:
+        st.error("Please log in")
     st.write("You are already logged in!")
     st.write("Click to LogOut")
     logout_request = st.button(
@@ -250,7 +286,7 @@ else:
     )
     if logout_request:
         response = requests.post(
-            URL + "logout/",
+            USERS_URL + "logout/",
             headers={"jwt": st.session_state.jwt},
         )
         if response.status_code == 200:
