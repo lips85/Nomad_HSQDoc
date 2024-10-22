@@ -44,6 +44,10 @@ for key, default in [
     ("messages_url", None),
     # 현재 유저가 보고 있는 대화방의 url을 나타내는 session state
     ("conversation_url", None),
+    # 업로드한 파일 이름을 나타내는 session state
+    ("file_name", None),
+    # 업로드한 파일 경로을 나타내는 session state
+    ("file_path", None),
     # langchain
     ("messages", {}),
     ("api_key", None),
@@ -78,13 +82,13 @@ class FileController:
     # 파일 임베딩 함수
     @staticmethod
     @st.cache_resource(show_spinner="Embedding file...")
-    def embed_file(file):
-        os.makedirs("./.cache/files", exist_ok=True)
-        file_path = f"./.cache/files/{file.name}"
-        with open(file_path, "wb") as f:
-            f.write(file.read())
+    def embed_file(file_name, file_path):
+        # os.makedirs("./.cache/files", exist_ok=True)
+        # file_path = f"./.cache/files/{file.name}"
+        # with open(file_path, "wb") as f:
+        #     f.write(file.read())
 
-        cache_dir = LocalFileStore(f"./.cache/embeddings/open_ai/{file.name}")
+        cache_dir = LocalFileStore(f"./.cache/embeddings/open_ai/{file_name}")
         splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             separators=["\n\n", ".", "?", "!"],
             chunk_size=1000,
@@ -261,6 +265,27 @@ else:
                 else:
                     st.error("Please Choose Proper Conversation")
 
+            # 과거 업로드한 파일 가져오기
+            response = requests.get(
+                st.session_state["conversation_url"],
+                headers={"jwt": st.session_state.jwt},
+            )
+            if response.status_code == 200:
+                file_name = response.json()["file_name"]
+                st.session_state["file_name"] = file_name
+                st.session_state["file_path"] = f"./.cache/files/{file_name}"
+                if st.session_state["file_name"] != "":
+                    st.session_state["file_check"] = True
+                else:
+                    st.warning("Please Upload File")
+                # print("file check", st.session_state["file_check"])
+                # print(
+                #     (
+                #         st.session_state["file_check"]
+                #         and (st.session_state["file_name"] != "")
+                #     )
+                # )
+
     else:
         st.error("Please log in")
     with st.sidebar:
@@ -307,17 +332,19 @@ else:
             )
             if upload_request:
                 # 파일을 장고에 저장
-                os.makedirs(f"./.cache", exist_ok=True)
-                uploaded_file_path = f"./.cache/{uploaded_file.name}"
-                with open(uploaded_file_path, "wb") as f:
+                os.makedirs(f"./.cache/files", exist_ok=True)
+                st.session_state["file_path"] = f"./.cache/files/{uploaded_file.name}"
+                with open(st.session_state["file_path"], "wb") as f:
                     f.write(uploaded_file.read())
 
+                st.session_state["file_name"] = uploaded_file.name
                 uploaded_file_path_for_django = FILE_UPLOAD_URL + uploaded_file.name
                 response = requests.put(
                     st.session_state["conversation_url"],
                     headers={"jwt": st.session_state.jwt},
                     data={
-                        "file": uploaded_file_path_for_django,
+                        "file_name": st.session_state["file_name"],
+                        "file_url": uploaded_file_path_for_django,
                     },
                 )
                 if st.session_state["file_check"]:
@@ -414,8 +441,12 @@ if (
         )
 
         retriever = (
-            FileController.embed_file(st.session_state["file"])
-            if st.session_state["file_check"]
+            FileController.embed_file(
+                st.session_state["file_name"], st.session_state["file_path"]
+            )
+            if (
+                st.session_state["file_check"] and (st.session_state["file_name"] != "")
+            )
             else None
         )
         if retriever:
@@ -450,4 +481,4 @@ if (
                         "ai",
                     )
         else:
-            st.session_state["messages"] = []
+            st.session_state["messages"] = {}
