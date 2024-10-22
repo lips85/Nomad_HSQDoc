@@ -333,6 +333,7 @@ if st.session_state["is_login"]:
                             | prompt
                             | llm
                         )
+
                         try:
                             with st.chat_message("ai"):
                                 ai_answer = chain.invoke(message)
@@ -393,10 +394,12 @@ if st.session_state["is_login"]:
             )
             if upload_request:
                 # 파일을 장고에 저장
+
                 os.makedirs("./.cache/files", exist_ok=True)
                 st.session_state["file_path"] = f"./.cache/files/{uploaded_file.name}"
                 with open(st.session_state["file_path"], "wb") as f:
                     f.write(uploaded_file.read())
+
                 st.session_state["file_name"] = uploaded_file.name
                 uploaded_file_path_for_django = FILE_UPLOAD_URL + uploaded_file.name
                 response = requests.put(
@@ -468,3 +471,5 @@ if st.session_state["is_login"]:
                 st.rerun()
             else:
                 st.error("Failed to LogOut")
+
+

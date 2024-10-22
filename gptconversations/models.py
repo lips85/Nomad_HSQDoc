@@ -14,7 +14,14 @@ class Conversation(CommonModel):
         max_length=150,
     )
 
-    file = models.URLField(
+    file_name = models.CharField(
+        max_length=150,
+        default="",
+        null=True,
+        blank=True,
+    )
+
+    file_url = models.URLField(
         null=True,
         blank=True,
     )
