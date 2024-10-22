@@ -1,5 +1,4 @@
 import re
-import requests
 import streamlit as st
 from utils.constant.constant import API_KEY_PATTERN
 

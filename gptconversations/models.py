@@ -14,7 +14,7 @@ class Conversation(CommonModel):
         max_length=150,
     )
 
-    file = models.FileField(
+    file = models.URLField(
         null=True,
         blank=True,
     )

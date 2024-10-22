@@ -28,6 +28,7 @@ load_dotenv()
 
 # backend urls
 
+FILE_UPLOAD_URL = "http://127.0.0.1:8000/uploads/"
 USERS_URL = "http://127.0.0.1:8000/api/v1/users/"
 CONVERSATIONS_URL = "http://127.0.0.1:8000/api/v1/conversations/"
 MESSAGES_URL = "http://127.0.0.1:8000/api/v1/messages/"
@@ -135,6 +136,7 @@ if st.session_state["jwt"] is None:
                     st.session_state.is_login = True
                     token = response.json()["token"]
                     st.session_state.jwt = token
+                    st.session_state["username"] = username
                     # 로그인 후 rerun 하는걸로 form 안 보이게 하기
                     # 그대신 rerun하면 st.success가 안 보이게 된다: 생기자마자 rerun으로 사라지기 때문
                     # st.success("Welcome! You are logged in!")
@@ -239,6 +241,7 @@ else:
                 CONVERSATIONS_URL + str(chosen_conversation_id) + "/"
             )
 
+            # 과거 대화 기록 가져오기
             if (
                 st.session_state["messages_url"]
                 not in st.session_state["messages"].keys()
@@ -292,33 +295,35 @@ else:
                         st.rerun()
 
             st.divider()
-        with st.form(key="upload_file"):
+        with st.form("upload_file"):
             uploaded_file = st.file_uploader(
                 "Upload a .txt .pdf or .docx file",
                 type=["pdf", "txt", "docx"],
-                # on_change=SaveEnv.save_file,
                 key="file",
             )
-            upload_request = st.form_submit_button("Upload file")
+            upload_request = st.form_submit_button(
+                "Upload File",
+                on_click=SaveEnv.save_file,
+            )
             if upload_request:
                 # 파일을 장고에 저장
-                # response = requests.put(
-                #     st.session_state["conversation_url"],
-                #     headers={"jwt": st.session_state.jwt},
-                #     data={
-                #         "file": uploaded_file,
-                #     },
-                # )
-                # if response.status_code ==
-                # print(response.status_code)
-                # print(response.json())
-                # print(uploaded_file.getvalue())
-                print(uploaded_file._file_urls)
-                # print(uploaded_file.)
-            if st.session_state["file_check"]:
-                st.success("😄문서가 업로드되었습니다.😄")
-            else:
-                st.warning("문서를 업로드해주세요.")
+                os.makedirs(f"./.cache", exist_ok=True)
+                uploaded_file_path = f"./.cache/{uploaded_file.name}"
+                with open(uploaded_file_path, "wb") as f:
+                    f.write(uploaded_file.read())
+
+                uploaded_file_path_for_django = FILE_UPLOAD_URL + uploaded_file.name
+                response = requests.put(
+                    st.session_state["conversation_url"],
+                    headers={"jwt": st.session_state.jwt},
+                    data={
+                        "file": uploaded_file_path_for_django,
+                    },
+                )
+                if st.session_state["file_check"]:
+                    st.success("😄문서가 업로드되었습니다.😄")
+                else:
+                    st.warning("문서를 업로드해주세요.")
         st.divider()
         st.text_input(
             "API_KEY 입력",
