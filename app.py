@@ -276,8 +276,7 @@ else:
                 st.session_state["file_path"] = f"./.cache/files/{file_name}"
                 if st.session_state["file_name"] != "":
                     st.session_state["file_check"] = True
-                else:
-                    st.warning("Please Upload File")
+
                 # print("file check", st.session_state["file_check"])
                 # print(
                 #     (
