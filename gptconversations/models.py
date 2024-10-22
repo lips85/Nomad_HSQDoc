@@ -10,9 +10,20 @@ class Conversation(CommonModel):
         related_name="conversations",
     )
 
-    # later change to file
     title = models.CharField(
         max_length=150,
+    )
+
+    file_name = models.CharField(
+        max_length=150,
+        default="",
+        null=True,
+        blank=True,
+    )
+
+    file_url = models.URLField(
+        null=True,
+        blank=True,
     )
 
     def __str__(self):

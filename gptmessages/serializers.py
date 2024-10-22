@@ -10,8 +10,8 @@ class MessagesSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "conversation",
-            "user_message",
-            "ai_message",
+            "message_role",
+            "message_content",
         )
 
 
@@ -20,6 +20,6 @@ class MessagesInConversationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = (
-            "user_message",
-            "ai_message",
+            "message_role",
+            "message_content",
         )

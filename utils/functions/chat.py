@@ -1,11 +1,27 @@
 import streamlit as st
+import requests
 from langchain.callbacks.base import BaseCallbackHandler
 
 
 class ChatMemory:
     @staticmethod
+    def save_message_db(message, role):
+        response = requests.post(
+            st.session_state["messages_url"],
+            headers={"jwt": st.session_state.jwt},
+            json={
+                "message_role": role,
+                "message_content": message,
+            },
+        )
+        if response.status_code != 200:
+            st.error("Failed to Save Message")
+
+    @staticmethod
     def save_message(message, role):
-        st.session_state["messages"].append({"message": message, "role": role})
+        st.session_state["messages"][st.session_state["messages_url"]].append(
+            {"message": message, "role": role}
+        )
 
     @staticmethod
     def send_message(message, role, save=True):
@@ -13,11 +29,15 @@ class ChatMemory:
             st.markdown(message)
         if save:
             ChatMemory.save_message(message, role)
+            ChatMemory.save_message_db(message, role)
 
     @staticmethod
     def paint_history():
-        for message in st.session_state["messages"]:
-            ChatMemory.send_message(message["message"], message["role"], save=False)
+        if st.session_state["messages_url"] in st.session_state["messages"].keys():
+            for message in st.session_state["messages"][
+                st.session_state["messages_url"]
+            ]:
+                ChatMemory.send_message(message["message"], message["role"], save=False)
 
 
 # 콜백 핸들러 클래스 정의
