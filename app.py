@@ -269,6 +269,18 @@ else:
                     else:
                         st.error("Please Choose Proper Conversation")
 
+                # 과거 업로드한 파일 가져오기
+                response = requests.get(
+                    st.session_state["conversation_url"],
+                    headers={"jwt": st.session_state.jwt},
+                )
+                if response.status_code == 200:
+                    file_name = response.json()["file_name"]
+                    st.session_state["file_name"] = file_name
+                    st.session_state["file_path"] = f"./.cache/files/{file_name}"
+                    if st.session_state["file_name"] != "":
+                        st.session_state["file_check"] = True
+
         else:
             st.error("Please log in")
 
