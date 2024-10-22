@@ -7,7 +7,7 @@ class ChatMemory:
     @staticmethod
     def save_message_db(message, role):
         response = requests.post(
-            st.session_state["conversation_url"],
+            st.session_state["messages_url"],
             headers={"jwt": st.session_state.jwt},
             json={
                 "message_role": role,
@@ -19,7 +19,7 @@ class ChatMemory:
 
     @staticmethod
     def save_message(message, role):
-        st.session_state["messages"][st.session_state["conversation_url"]].append(
+        st.session_state["messages"][st.session_state["messages_url"]].append(
             {"message": message, "role": role}
         )
 
@@ -33,9 +33,9 @@ class ChatMemory:
 
     @staticmethod
     def paint_history():
-        if st.session_state["conversation_url"] in st.session_state["messages"].keys():
+        if st.session_state["messages_url"] in st.session_state["messages"].keys():
             for message in st.session_state["messages"][
-                st.session_state["conversation_url"]
+                st.session_state["messages_url"]
             ]:
                 ChatMemory.send_message(message["message"], message["role"], save=False)
 

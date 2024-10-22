@@ -39,7 +39,9 @@ for key, default in [
     ("jwt", None),
     # 로그인 했는지를 나타내는 session state
     ("is_login", False),
-    # 현재 유저가 보고 있는 대화방을 나타내는 session state
+    # 현재 유저가 보고 있는 대화방의 대화 기록 url을 나타내는 session state
+    ("messages_url", None),
+    # 현재 유저가 보고 있는 대화방의 url을 나타내는 session state
     ("conversation_url", None),
     # langchain
     ("messages", {}),
@@ -230,17 +232,20 @@ else:
         else:
             chosen_conversation_index = conversations_options.index(chosen_option) - 1
             chosen_conversation_id = conversations[int(chosen_conversation_index)]["id"]
-            st.session_state["conversation_url"] = (
+            st.session_state["messages_url"] = (
                 MESSAGES_URL + str(chosen_conversation_id) + "/"
+            )
+            st.session_state["conversation_url"] = (
+                CONVERSATIONS_URL + str(chosen_conversation_id) + "/"
             )
 
             if (
-                st.session_state["conversation_url"]
+                st.session_state["messages_url"]
                 not in st.session_state["messages"].keys()
             ):
-                st.session_state["messages"][st.session_state["conversation_url"]] = []
+                st.session_state["messages"][st.session_state["messages_url"]] = []
                 messages_data = requests.get(
-                    st.session_state["conversation_url"],
+                    st.session_state["messages_url"],
                     headers={"jwt": st.session_state.jwt},
                 )
                 if messages_data.status_code == 200:
@@ -265,7 +270,7 @@ else:
 
                 if update_request:
                     response = requests.put(
-                        CONVERSATIONS_URL + str(chosen_conversation_id) + "/",
+                        st.session_state["conversation_url"],
                         headers={"jwt": st.session_state.jwt},
                         json={
                             "title": updated_title,
@@ -278,7 +283,7 @@ else:
 
                 if delete_request:
                     response = requests.delete(
-                        CONVERSATIONS_URL + str(chosen_conversation_id) + "/",
+                        st.session_state["conversation_url"],
                         headers={"jwt": st.session_state.jwt},
                     )
                     if response.status_code != 204:
@@ -287,16 +292,33 @@ else:
                         st.rerun()
 
             st.divider()
-        st.file_uploader(
-            "Upload a .txt .pdf or .docx file",
-            type=["pdf", "txt", "docx"],
-            on_change=SaveEnv.save_file,
-            key="file",
-        )
-        if st.session_state["file_check"]:
-            st.success("😄문서가 업로드되었습니다.😄")
-        else:
-            st.warning("문서를 업로드해주세요.")
+        with st.form(key="upload_file"):
+            uploaded_file = st.file_uploader(
+                "Upload a .txt .pdf or .docx file",
+                type=["pdf", "txt", "docx"],
+                # on_change=SaveEnv.save_file,
+                key="file",
+            )
+            upload_request = st.form_submit_button("Upload file")
+            if upload_request:
+                # 파일을 장고에 저장
+                # response = requests.put(
+                #     st.session_state["conversation_url"],
+                #     headers={"jwt": st.session_state.jwt},
+                #     data={
+                #         "file": uploaded_file,
+                #     },
+                # )
+                # if response.status_code ==
+                # print(response.status_code)
+                # print(response.json())
+                # print(uploaded_file.getvalue())
+                print(uploaded_file._file_urls)
+                # print(uploaded_file.)
+            if st.session_state["file_check"]:
+                st.success("😄문서가 업로드되었습니다.😄")
+            else:
+                st.warning("문서를 업로드해주세요.")
         st.divider()
         st.text_input(
             "API_KEY 입력",

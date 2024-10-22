@@ -148,3 +148,9 @@ REST_FRAMEWORK = {
         "config.authentication.JWTAuthentication",
     ]
 }
+
+MEDIA_ROOT = "uploads"
+
+MEDIA_URL = "pdf-uploads/"
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
