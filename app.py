@@ -109,9 +109,9 @@ class FileController:
 
 
 if st.session_state["jwt"] is None:
-    mode = st.selectbox("Login or Register", ["Login", "Register"])
-    if mode == "Login":
-        with st.form(key="login"):
+    with st.form(key="login_or_register"):
+        tab1, tab2 = st.tabs(["login", "Register"])
+        with tab1:
 
             username = st.text_input(
                 "Username",
@@ -144,8 +144,8 @@ if st.session_state["jwt"] is None:
                 elif response.status_code == 400:
                     error_message = response.json()["error"]
                     st.error(error_message)
-    elif mode == "Register":
-        with st.form(key="register", clear_on_submit=True):
+
+        with tab2:
             first_name = st.text_input(
                 "Enter Your First Name",
             )
@@ -307,8 +307,8 @@ else:
             )
             if upload_request:
                 # 파일을 장고에 저장
-                os.makedirs(f"./.cache", exist_ok=True)
-                uploaded_file_path = f"./.cache/{uploaded_file.name}"
+                os.makedirs("./.cache/files", exist_ok=True)
+                uploaded_file_path = f"./.cache/files/{uploaded_file.name}"
                 with open(uploaded_file_path, "wb") as f:
                     f.write(uploaded_file.read())
 
