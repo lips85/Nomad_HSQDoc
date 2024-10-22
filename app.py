@@ -350,7 +350,7 @@ if st.session_state["is_login"]:
                         )
             else:
                 st.session_state["messages"] = {}
-    else:
+    with st.sidebar:
         if chosen_option != "Create Conversation":
             with st.form(key="update_or_delete_conversation", clear_on_submit=True):
                 st.write("Update or Delete Conversation")
@@ -447,11 +447,11 @@ if st.session_state["is_login"]:
         st.divider()
         st.write(
             """
-            Made by hary, seedjin298.
-            
-            Github
-            https://github.com/lips85/Nomad_HSQDoc
-            """
+                Made by hary, seedjin298.
+                
+                Github
+                https://github.com/lips85/Nomad_HSQDoc
+                """
         )
         st.divider()
         st.write("Click to LogOut")
@@ -471,5 +471,3 @@ if st.session_state["is_login"]:
                 st.rerun()
             else:
                 st.error("Failed to LogOut")
-
-
