@@ -371,6 +371,21 @@ class ConversationDetail(APITestCase):
             data,
         )
 
+        # 이미 있는 title로 update 시도
+        response = self.client.put(
+            self.URL + "1/",
+            headers={
+                "jwt": self.token,
+            },
+            data={
+                "title": test_title,
+            },
+        )
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
     def test_delete_conversation(self):
 
         # 로그인하지 않은 상태에서 delete

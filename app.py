@@ -32,8 +32,8 @@ USERS_URL = "http://127.0.0.1:8000/api/v1/users/"
 CONVERSATIONS_URL = "http://127.0.0.1:8000/api/v1/conversations/"
 MESSAGES_URL = "http://127.0.0.1:8000/api/v1/messages/"
 
-# front 손보기
 
+# front 손보기
 for key, default in [
     # jwt token을 담기 위한 session state
     ("jwt", None),
@@ -53,6 +53,12 @@ for key, default in [
         st.session_state[key] = default
 
 
+def clear_session_keys():
+    keys = list(st.session_state.keys())
+    for key in keys:
+        st.session_state.pop(key)
+
+
 st.set_page_config(
     page_title="HSQDoc",
     page_icon="📃",
@@ -60,6 +66,9 @@ st.set_page_config(
 )
 
 st.title("Welcome to HSQDoc!")
+
+if st.session_state["is_login"]:
+    st.subheader("Create a Conversation or Choose a Existing Conversation to Start")
 
 
 class FileController:
@@ -183,76 +192,6 @@ if st.session_state["jwt"] is None:
                     else:
                         st.error("Register Fail")
 else:
-    with st.sidebar:
-        st.file_uploader(
-            "Upload a .txt .pdf or .docx file",
-            type=["pdf", "txt", "docx"],
-            on_change=SaveEnv.save_file,
-            key="file",
-        )
-        if st.session_state["file_check"]:
-            st.success("😄문서가 업로드되었습니다.😄")
-        else:
-            st.warning("문서를 업로드해주세요.")
-        st.divider()
-        st.text_input(
-            "API_KEY 입력",
-            placeholder="sk-...",
-            on_change=SaveEnv.save_api_key,
-            key="api_key",
-        )
-
-        if st.session_state["api_key_check"]:
-            st.success("😄API_KEY가 저장되었습니다.😄")
-        else:
-            st.warning("API_KEY를 넣어주세요.")
-
-        st.button(
-            "hary의 API_KEY (디버그용)",
-            on_click=Debug.my_api_key,
-            key="my_key_button",
-        )
-        st.divider()
-        st.selectbox(
-            "OpenAI Model을 골라주세요.",
-            options=OPENAI_MODEL,
-            on_change=SaveEnv.save_openai_model,
-            key="openai_model",
-        )
-
-        if st.session_state["openai_model_check"]:
-            st.success("😄모델이 선택되었습니다.😄")
-        else:
-            st.warning("모델을 선택해주세요.")
-        st.divider()
-        st.write(
-            """
-            Made by hary, seedjin298.
-            
-            Github
-            https://github.com/lips85/Nomad_HSQDoc
-            """
-        )
-        st.divider()
-        st.write("Click to LogOut")
-        logout_request = st.button(
-            "LogOut",
-            disabled=not st.session_state.is_login,
-        )
-        if logout_request:
-            response = requests.post(
-                USERS_URL + "logout/",
-                headers={"jwt": st.session_state.jwt},
-            )
-            if response.status_code == 200:
-                st.session_state.is_login = False
-                st.session_state.jwt = None
-                # 로그아웃 후 rerun -> 바로 로그인 form이 나타남
-                # st.success("LogOut Success!")
-                st.rerun()
-            else:
-                st.error("Failed to LogOut")
-
     conversations_data = requests.get(
         CONVERSATIONS_URL,
         headers={"jwt": st.session_state.jwt},
@@ -316,7 +255,105 @@ else:
 
     else:
         st.error("Please log in")
+    with st.sidebar:
+        if chosen_option != "Create Conversation":
+            with st.form(key="update_or_delete_conversation", clear_on_submit=True):
+                st.write("Update or Delete Conversation")
+                updated_title = st.text_input("Write a New Conversation Title")
+                update_request = st.form_submit_button("Update Title")
+                delete_request = st.form_submit_button("Delete Conversation")
 
+                if update_request:
+                    response = requests.put(
+                        CONVERSATIONS_URL + str(chosen_conversation_id) + "/",
+                        headers={"jwt": st.session_state.jwt},
+                        json={
+                            "title": updated_title,
+                        },
+                    )
+                    if response.status_code != 200:
+                        st.error("Update Failed. Try Again")
+                    else:
+                        st.rerun()
+
+                if delete_request:
+                    response = requests.delete(
+                        CONVERSATIONS_URL + str(chosen_conversation_id) + "/",
+                        headers={"jwt": st.session_state.jwt},
+                    )
+                    if response.status_code != 204:
+                        st.error("Delete Failed. Try Again")
+                    else:
+                        st.rerun()
+
+            st.divider()
+        st.file_uploader(
+            "Upload a .txt .pdf or .docx file",
+            type=["pdf", "txt", "docx"],
+            on_change=SaveEnv.save_file,
+            key="file",
+        )
+        if st.session_state["file_check"]:
+            st.success("😄문서가 업로드되었습니다.😄")
+        else:
+            st.warning("문서를 업로드해주세요.")
+        st.divider()
+        st.text_input(
+            "API_KEY 입력",
+            placeholder="sk-...",
+            on_change=SaveEnv.save_api_key,
+            key="api_key",
+        )
+
+        if st.session_state["api_key_check"]:
+            st.success("😄API_KEY가 저장되었습니다.😄")
+        else:
+            st.warning("API_KEY를 넣어주세요.")
+
+        st.button(
+            "hary의 API_KEY (디버그용)",
+            on_click=Debug.my_api_key,
+            key="my_key_button",
+        )
+        st.divider()
+        st.selectbox(
+            "OpenAI Model을 골라주세요.",
+            options=OPENAI_MODEL,
+            on_change=SaveEnv.save_openai_model,
+            key="openai_model",
+        )
+
+        if st.session_state["openai_model_check"]:
+            st.success("😄모델이 선택되었습니다.😄")
+        else:
+            st.warning("모델을 선택해주세요.")
+        st.divider()
+        st.write(
+            """
+            Made by hary, seedjin298.
+            
+            Github
+            https://github.com/lips85/Nomad_HSQDoc
+            """
+        )
+        st.divider()
+        st.write("Click to LogOut")
+        logout_request = st.button(
+            "LogOut",
+            disabled=not st.session_state.is_login,
+        )
+        if logout_request:
+            response = requests.post(
+                USERS_URL + "logout/",
+                headers={"jwt": st.session_state.jwt},
+            )
+            if response.status_code == 200:
+                clear_session_keys()
+                # 로그아웃 후 rerun -> 바로 로그인 form이 나타남
+                # st.success("LogOut Success!")
+                st.rerun()
+            else:
+                st.error("Failed to LogOut")
 
 # 메인 로직
 if (
@@ -324,65 +361,66 @@ if (
     and st.session_state["file_check"]
     and st.session_state["openai_model_check"]
 ):
-    llm = ChatOpenAI(
-        temperature=0.1,
-        streaming=True,
-        callbacks=[ChatCallbackHandler()],
-        model=st.session_state["openai_model"],
-        openai_api_key=st.session_state["api_key"],
-    )
+    if chosen_option != "Create Conversation":
+        llm = ChatOpenAI(
+            temperature=0.1,
+            streaming=True,
+            callbacks=[ChatCallbackHandler()],
+            model=st.session_state["openai_model"],
+            openai_api_key=st.session_state["api_key"],
+        )
 
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """
-                You are an AI that reads documents for me. Please answer based on the document given below. 
-                If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
-                Please answer in the questioner's language 
-                
-                Context : {context}
-                """,
-            ),
-            ("human", "{question}"),
-        ]
-    )
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    """
+                    You are an AI that reads documents for me. Please answer based on the document given below. 
+                    If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
+                    Please answer in the questioner's language 
+                    
+                    Context : {context}
+                    """,
+                ),
+                ("human", "{question}"),
+            ]
+        )
 
-    retriever = (
-        FileController.embed_file(st.session_state["file"])
-        if st.session_state["file_check"]
-        else None
-    )
-    if retriever:
-        ChatMemory.send_message("I'm ready! Ask away!", "ai", save=False)
-        ChatMemory.paint_history()
-        message = st.chat_input("Ask anything about your file...")
+        retriever = (
+            FileController.embed_file(st.session_state["file"])
+            if st.session_state["file_check"]
+            else None
+        )
+        if retriever:
+            ChatMemory.send_message("I'm ready! Ask away!", "ai", save=False)
+            ChatMemory.paint_history()
+            message = st.chat_input("Ask anything about your file...")
 
-        if message:
-            if re.match(API_KEY_PATTERN, st.session_state["api_key"]) and re.match(
-                MODEL_PATTERN, st.session_state["openai_model"]
-            ):
-                ChatMemory.send_message(message, "human")
-                chain = (
-                    {
-                        "context": retriever
-                        | RunnableLambda(FileController.format_docs),
-                        "question": RunnablePassthrough(),
-                    }
-                    | prompt
-                    | llm
-                )
-                try:
-                    with st.chat_message("ai"):
-                        ai_answer = chain.invoke(message)
-                        ChatMemory.save_message_db(ai_answer.content, "ai")
-                except Exception as e:
-                    st.error(f"An error occurred: {e}")
-                    st.warning("OPENAI_API_KEY or 모델 선택을 다시 진행해주세요.")
-            else:
-                ChatMemory.send_message(
-                    "OPENAI_API_KEY or 모델 선택이 잘못되었습니다. 사이드바를 다시 확인하세요.",
-                    "ai",
-                )
-    else:
-        st.session_state["messages"] = []
+            if message:
+                if re.match(API_KEY_PATTERN, st.session_state["api_key"]) and re.match(
+                    MODEL_PATTERN, st.session_state["openai_model"]
+                ):
+                    ChatMemory.send_message(message, "human")
+                    chain = (
+                        {
+                            "context": retriever
+                            | RunnableLambda(FileController.format_docs),
+                            "question": RunnablePassthrough(),
+                        }
+                        | prompt
+                        | llm
+                    )
+                    try:
+                        with st.chat_message("ai"):
+                            ai_answer = chain.invoke(message)
+                            ChatMemory.save_message_db(ai_answer.content, "ai")
+                    except Exception as e:
+                        st.error(f"An error occurred: {e}")
+                        st.warning("OPENAI_API_KEY or 모델 선택을 다시 진행해주세요.")
+                else:
+                    ChatMemory.send_message(
+                        "OPENAI_API_KEY or 모델 선택이 잘못되었습니다. 사이드바를 다시 확인하세요.",
+                        "ai",
+                    )
+        else:
+            st.session_state["messages"] = []

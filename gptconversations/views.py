@@ -63,11 +63,22 @@ class ConversationDetail(APIView):
         conversation = self.get_conversation(id)
         if conversation.owner != request.user:
             raise PermissionDenied
+
         serializer = serializers.ConversationSerializer(
             conversation,
             data=request.data,
             partial=True,
         )
+        try:
+            title = request.data.get("title")
+            is_title_already_used = Conversation.objects.get(title=title)
+            if is_title_already_used:
+                return Response(
+                    {"error": "This Title is already used"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except:
+            is_title_already_used = False
         if serializer.is_valid():
             updated_conversation = serializer.save()
             serializer = serializers.ConversationSerializer(updated_conversation)
