@@ -148,3 +148,9 @@ REST_FRAMEWORK = {
         "config.authentication.JWTAuthentication",
     ]
 }
+
+MEDIA_ROOT = ".cache"
+
+MEDIA_URL = "uploads/"
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240

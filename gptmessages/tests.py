@@ -10,8 +10,8 @@ class TestMessagesLists(APITestCase):
 
     TITLE = "test_title"
 
-    USER_MESSAGE = "test user message"
-    AI_MESSAGE = "test ai message"
+    MESSAGE_ROLE = "human"
+    MESSAGE_CONTENT = "test message content"
 
     URL = "/api/v1/messages/"
 
@@ -37,8 +37,8 @@ class TestMessagesLists(APITestCase):
         # message 생성
         message = models.Message.objects.create(
             conversation=self.conversation,
-            user_message=self.USER_MESSAGE,
-            ai_message=self.AI_MESSAGE,
+            message_role=self.MESSAGE_ROLE,
+            message_content=self.MESSAGE_CONTENT,
         )
         message.save()
         self.message = message
@@ -80,7 +80,6 @@ class TestMessagesLists(APITestCase):
         )
         data = response.json()
         # print(data)
-        # [{'id': 1, 'conversation': 'test_title', 'user_message': 'test user message', 'ai_message': 'test ai message'}]
 
         self.assertIsInstance(
             data,
@@ -99,12 +98,12 @@ class TestMessagesLists(APITestCase):
             self.TITLE,
         )
         self.assertEqual(
-            data[0]["user_message"],
-            self.USER_MESSAGE,
+            data[0]["message_role"],
+            self.MESSAGE_ROLE,
         )
         self.assertEqual(
-            data[0]["ai_message"],
-            self.AI_MESSAGE,
+            data[0]["message_content"],
+            self.MESSAGE_CONTENT,
         )
 
 
@@ -118,8 +117,8 @@ class TestConversationMessages(APITestCase):
 
     TITLE = "test_title"
 
-    USER_MESSAGE = "test user message"
-    AI_MESSAGE = "test ai message"
+    MESSAGE_ROLE = "human"
+    MESSAGE_CONTENT = "test message content"
 
     URL = "/api/v1/messages/"
 
@@ -153,8 +152,8 @@ class TestConversationMessages(APITestCase):
         # message 생성
         message = models.Message.objects.create(
             conversation=self.conversation,
-            user_message=self.USER_MESSAGE,
-            ai_message=self.AI_MESSAGE,
+            message_role=self.MESSAGE_ROLE,
+            message_content=self.MESSAGE_CONTENT,
         )
         message.save()
         self.message = message
@@ -215,7 +214,6 @@ class TestConversationMessages(APITestCase):
         )
         data = response.json()
         # print(data)
-        # [{'user_message': 'test user message', 'ai_message': 'test ai message'}]
 
         self.assertIsInstance(
             data,
@@ -226,12 +224,12 @@ class TestConversationMessages(APITestCase):
             1,
         )
         self.assertEqual(
-            data[0]["user_message"],
-            self.USER_MESSAGE,
+            data[0]["message_role"],
+            self.MESSAGE_ROLE,
         )
         self.assertEqual(
-            data[0]["ai_message"],
-            self.AI_MESSAGE,
+            data[0]["message_content"],
+            self.MESSAGE_CONTENT,
         )
 
     def test_post_messages_in_conversation(self):
@@ -266,15 +264,15 @@ class TestConversationMessages(APITestCase):
             400,
         )
 
-        # user_message만 주는 경우
-        test_user_message = "test user message post"
+        # message_role만 주는 경우
+        test_message_role = "ai"
         response = self.client.post(
             self.URL + "1/",
             headers={
                 "jwt": self.token,
             },
             data={
-                "user_message": test_user_message,
+                "message_role": test_message_role,
             },
         )
         self.assertEqual(
@@ -282,15 +280,15 @@ class TestConversationMessages(APITestCase):
             400,
         )
 
-        # ai_message만 주는 경우
-        test_ai_message = "test ai message post"
+        # message_content만 주는 경우
+        test_message_content = "test message content post"
         response = self.client.post(
             self.URL + "1/",
             headers={
                 "jwt": self.token,
             },
             data={
-                "ai_message": test_ai_message,
+                "message_content": test_message_content,
             },
         )
         self.assertEqual(
@@ -298,15 +296,15 @@ class TestConversationMessages(APITestCase):
             400,
         )
 
-        #  user_message, ai_message 다 주는 경우
+        #  message_role, message_content 다 주는 경우
         response = self.client.post(
             self.URL + "1/",
             headers={
                 "jwt": self.token,
             },
             data={
-                "user_message": test_user_message,
-                "ai_message": test_ai_message,
+                "message_role": test_message_role,
+                "message_content": test_message_content,
             },
         )
         self.assertEqual(
@@ -316,7 +314,6 @@ class TestConversationMessages(APITestCase):
 
         data = response.json()
         # print(data)
-        # {'id': 2, 'conversation': 'test_title', 'user_message': 'test user message post', 'ai_message': 'test ai message post'}
 
         self.assertEqual(
             data["id"],
@@ -327,10 +324,10 @@ class TestConversationMessages(APITestCase):
             self.TITLE,
         )
         self.assertEqual(
-            data["user_message"],
-            test_user_message,
+            data["message_role"],
+            test_message_role,
         )
         self.assertEqual(
-            data["ai_message"],
-            test_ai_message,
+            data["message_content"],
+            test_message_content,
         )

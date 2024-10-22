@@ -166,6 +166,21 @@ class TestConversationsList(APITestCase):
             data,
         )
 
+        # 이미 있는 title로 post
+        response = self.client.post(
+            self.URL,
+            data={
+                "title": test_title,
+            },
+            headers={
+                "jwt": self.token,
+            },
+        )
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
 
 class ConversationDetail(APITestCase):
 
@@ -354,6 +369,21 @@ class ConversationDetail(APITestCase):
         self.assertIn(
             "updated_at",
             data,
+        )
+
+        # 이미 있는 title로 update 시도
+        response = self.client.put(
+            self.URL + "1/",
+            headers={
+                "jwt": self.token,
+            },
+            data={
+                "title": test_title,
+            },
+        )
+        self.assertEqual(
+            response.status_code,
+            400,
         )
 
     def test_delete_conversation(self):
