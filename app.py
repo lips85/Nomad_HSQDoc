@@ -69,7 +69,6 @@ def clear_session_keys():
 st.set_page_config(
     page_title="HSQDoc",
     page_icon="📃",
-    layout="wide",
 )
 
 st.title("Welcome to HSQDoc!")
@@ -113,9 +112,9 @@ class FileController:
 
 
 if st.session_state["jwt"] is None:
-    mode = st.selectbox("Login or Register", ["Login", "Register"])
-    if mode == "Login":
-        with st.form(key="login"):
+    with st.form(key="login_or_register"):
+        tab1, tab2 = st.tabs(["login", "Register"])
+        with tab1:
 
             username = st.text_input(
                 "Username",
@@ -148,8 +147,8 @@ if st.session_state["jwt"] is None:
                 elif response.status_code == 400:
                     error_message = response.json()["error"]
                     st.error(error_message)
-    elif mode == "Register":
-        with st.form(key="register", clear_on_submit=True):
+
+        with tab2:
             first_name = st.text_input(
                 "Enter Your First Name",
             )
@@ -200,94 +199,158 @@ if st.session_state["jwt"] is None:
                     else:
                         st.error("Register Fail")
 else:
-    conversations_data = requests.get(
-        CONVERSATIONS_URL,
-        headers={"jwt": st.session_state.jwt},
-    )
-    if conversations_data.status_code == 200:
-        conversations = conversations_data.json()
-        conversations_options = ["Create Conversation"]
-        for conversation in conversations:
-            conversations_options.append(conversation["title"])
-        chosen_option = st.selectbox(
-            "Create or Choose a Conversation", conversations_options
+    with st.sidebar:
+        conversations_data = requests.get(
+            CONVERSATIONS_URL,
+            headers={"jwt": st.session_state.jwt},
         )
-        if chosen_option == "Create Conversation":
-            with st.form(key="create_conversation", clear_on_submit=True):
-                new_title = st.text_input(
-                    "Write a Title for Your Conversation With AI",
+        if conversations_data.status_code == 200:
+            conversations = conversations_data.json()
+            conversations_options = ["Create Conversation"]
+            for conversation in conversations:
+                conversations_options.append(conversation["title"])
+            chosen_option = st.selectbox(
+                "Create or Choose a Conversation", conversations_options
+            )
+            if chosen_option == "Create Conversation":
+                with st.form(key="create_conversation", clear_on_submit=True):
+                    new_title = st.text_input(
+                        "Write a Title for Your Conversation With AI",
+                    )
+                    create_conversation_request = st.form_submit_button(
+                        "Create Conversation",
+                    )
+
+                    if create_conversation_request:
+                        response = requests.post(
+                            CONVERSATIONS_URL,
+                            headers={"jwt": st.session_state.jwt},
+                            json={
+                                "title": new_title,
+                            },
+                        )
+                        if response.status_code != 200:
+                            error_message = response.json()["error"]
+                            st.error(error_message)
+                        else:
+                            st.rerun()
+
+            else:
+                chosen_conversation_index = (
+                    conversations_options.index(chosen_option) - 1
                 )
-                create_conversation_request = st.form_submit_button(
-                    "Create Conversation",
+                chosen_conversation_id = conversations[int(chosen_conversation_index)][
+                    "id"
+                ]
+                st.session_state["messages_url"] = (
+                    MESSAGES_URL + str(chosen_conversation_id) + "/"
+                )
+                st.session_state["conversation_url"] = (
+                    CONVERSATIONS_URL + str(chosen_conversation_id) + "/"
                 )
 
-                if create_conversation_request:
-                    response = requests.post(
-                        CONVERSATIONS_URL,
+                # 과거 대화 기록 가져오기
+                if (
+                    st.session_state["messages_url"]
+                    not in st.session_state["messages"].keys()
+                ):
+                    st.session_state["messages"][st.session_state["messages_url"]] = []
+                    messages_data = requests.get(
+                        st.session_state["messages_url"],
                         headers={"jwt": st.session_state.jwt},
-                        json={
-                            "title": new_title,
-                        },
                     )
-                    if response.status_code != 200:
-                        error_message = response.json()["error"]
-                        st.error(error_message)
+                    if messages_data.status_code == 200:
+                        messages = messages_data.json()
+                        for message in messages:
+                            ChatMemory.save_message(
+                                message["message_content"],
+                                message["message_role"],
+                            )
                     else:
-                        st.rerun()
+                        st.error("Please Choose Proper Conversation")
 
         else:
-            chosen_conversation_index = conversations_options.index(chosen_option) - 1
-            chosen_conversation_id = conversations[int(chosen_conversation_index)]["id"]
-            st.session_state["messages_url"] = (
-                MESSAGES_URL + str(chosen_conversation_id) + "/"
-            )
-            st.session_state["conversation_url"] = (
-                CONVERSATIONS_URL + str(chosen_conversation_id) + "/"
+            st.error("Please log in")
+
+    # 메인 로직
+if st.session_state["is_login"]:
+    if (
+        st.session_state["api_key_check"]
+        and st.session_state["file_check"]
+        and st.session_state["openai_model_check"]
+    ):
+        if chosen_option != "Create Conversation":
+            llm = ChatOpenAI(
+                temperature=0.1,
+                streaming=True,
+                callbacks=[ChatCallbackHandler()],
+                model=st.session_state["openai_model"],
+                openai_api_key=st.session_state["api_key"],
             )
 
-            # 과거 대화 기록 가져오기
-            if (
-                st.session_state["messages_url"]
-                not in st.session_state["messages"].keys()
-            ):
-                st.session_state["messages"][st.session_state["messages_url"]] = []
-                messages_data = requests.get(
-                    st.session_state["messages_url"],
-                    headers={"jwt": st.session_state.jwt},
+            prompt = ChatPromptTemplate.from_messages(
+                [
+                    (
+                        "system",
+                        """
+                        You are an AI that reads documents for me. Please answer based on the document given below. 
+                        If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
+                        Please answer in the questioner's language 
+                        
+                        Context : {context}
+                        """,
+                    ),
+                    ("human", "{question}"),
+                ]
+            )
+
+            retriever = (
+                FileController.embed_file(
+                    st.session_state["file_name"], st.session_state["file_path"]
                 )
-                if messages_data.status_code == 200:
-                    messages = messages_data.json()
-                    for message in messages:
-                        ChatMemory.save_message(
-                            message["message_content"],
-                            message["message_role"],
-                        )
-                else:
-                    st.error("Please Choose Proper Conversation")
-
-            # 과거 업로드한 파일 가져오기
-            response = requests.get(
-                st.session_state["conversation_url"],
-                headers={"jwt": st.session_state.jwt},
+                if (
+                    st.session_state["file_check"]
+                    and (st.session_state["file_name"] != "")
+                )
+                else None
             )
-            if response.status_code == 200:
-                file_name = response.json()["file_name"]
-                st.session_state["file_name"] = file_name
-                st.session_state["file_path"] = f"./.cache/files/{file_name}"
-                if st.session_state["file_name"] != "":
-                    st.session_state["file_check"] = True
+            if retriever:
+                ChatMemory.send_message("I'm ready! Ask away!", "ai", save=False)
+                ChatMemory.paint_history()
+                message = st.chat_input("Ask anything about your file...")
 
-                # print("file check", st.session_state["file_check"])
-                # print(
-                #     (
-                #         st.session_state["file_check"]
-                #         and (st.session_state["file_name"] != "")
-                #     )
-                # )
+                if message:
+                    if re.match(
+                        API_KEY_PATTERN, st.session_state["api_key"]
+                    ) and re.match(MODEL_PATTERN, st.session_state["openai_model"]):
+                        ChatMemory.send_message(message, "human")
+                        chain = (
+                            {
+                                "context": retriever
+                                | RunnableLambda(FileController.format_docs),
+                                "question": RunnablePassthrough(),
+                            }
+                            | prompt
+                            | llm
+                        )
 
+                        try:
+                            with st.chat_message("ai"):
+                                ai_answer = chain.invoke(message)
+                                ChatMemory.save_message_db(ai_answer.content, "ai")
+                        except Exception as e:
+                            st.error(f"An error occurred: {e}")
+                            st.warning(
+                                "OPENAI_API_KEY or 모델 선택을 다시 진행해주세요."
+                            )
+                    else:
+                        ChatMemory.send_message(
+                            "OPENAI_API_KEY or 모델 선택이 잘못되었습니다. 사이드바를 다시 확인하세요.",
+                            "ai",
+                        )
+            else:
+                st.session_state["messages"] = {}
     else:
-        st.error("Please log in")
-    with st.sidebar:
         if chosen_option != "Create Conversation":
             with st.form(key="update_or_delete_conversation", clear_on_submit=True):
                 st.write("Update or Delete Conversation")
@@ -331,7 +394,8 @@ else:
             )
             if upload_request:
                 # 파일을 장고에 저장
-                os.makedirs(f"./.cache/files", exist_ok=True)
+
+                os.makedirs("./.cache/files", exist_ok=True)
                 st.session_state["file_path"] = f"./.cache/files/{uploaded_file.name}"
                 with open(st.session_state["file_path"], "wb") as f:
                     f.write(uploaded_file.read())
@@ -408,76 +472,4 @@ else:
             else:
                 st.error("Failed to LogOut")
 
-# 메인 로직
-if (
-    st.session_state["api_key_check"]
-    and st.session_state["file_check"]
-    and st.session_state["openai_model_check"]
-):
-    if chosen_option != "Create Conversation":
-        llm = ChatOpenAI(
-            temperature=0.1,
-            streaming=True,
-            callbacks=[ChatCallbackHandler()],
-            model=st.session_state["openai_model"],
-            openai_api_key=st.session_state["api_key"],
-        )
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    """
-                    You are an AI that reads documents for me. Please answer based on the document given below. 
-                    If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
-                    Please answer in the questioner's language 
-                    
-                    Context : {context}
-                    """,
-                ),
-                ("human", "{question}"),
-            ]
-        )
-
-        retriever = (
-            FileController.embed_file(
-                st.session_state["file_name"], st.session_state["file_path"]
-            )
-            if (
-                st.session_state["file_check"] and (st.session_state["file_name"] != "")
-            )
-            else None
-        )
-        if retriever:
-            ChatMemory.send_message("I'm ready! Ask away!", "ai", save=False)
-            ChatMemory.paint_history()
-            message = st.chat_input("Ask anything about your file...")
-
-            if message:
-                if re.match(API_KEY_PATTERN, st.session_state["api_key"]) and re.match(
-                    MODEL_PATTERN, st.session_state["openai_model"]
-                ):
-                    ChatMemory.send_message(message, "human")
-                    chain = (
-                        {
-                            "context": retriever
-                            | RunnableLambda(FileController.format_docs),
-                            "question": RunnablePassthrough(),
-                        }
-                        | prompt
-                        | llm
-                    )
-                    try:
-                        with st.chat_message("ai"):
-                            ai_answer = chain.invoke(message)
-                            ChatMemory.save_message_db(ai_answer.content, "ai")
-                    except Exception as e:
-                        st.error(f"An error occurred: {e}")
-                        st.warning("OPENAI_API_KEY or 모델 선택을 다시 진행해주세요.")
-                else:
-                    ChatMemory.send_message(
-                        "OPENAI_API_KEY or 모델 선택이 잘못되었습니다. 사이드바를 다시 확인하세요.",
-                        "ai",
-                    )
-        else:
-            st.session_state["messages"] = {}
