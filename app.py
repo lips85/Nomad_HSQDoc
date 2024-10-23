@@ -1,5 +1,6 @@
 import re
 import os
+import requests
 import streamlit as st
 
 from langchain.chat_models import ChatOpenAI
@@ -11,7 +12,6 @@ from langchain.vectorstores.faiss import FAISS
 from langchain.storage import LocalFileStore
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
-import requests
 
 # 파일 분리 (상수들)
 from utils.constant.constant import OPENAI_MODEL, API_KEY_PATTERN, MODEL_PATTERN

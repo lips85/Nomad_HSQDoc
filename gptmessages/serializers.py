@@ -12,6 +12,8 @@ class MessagesSerializer(serializers.ModelSerializer):
             "conversation",
             "message_role",
             "message_content",
+            "model",
+            "token",
         )
 
 
@@ -22,4 +24,6 @@ class MessagesInConversationSerializer(serializers.ModelSerializer):
         fields = (
             "message_role",
             "message_content",
+            "model",
+            "token",
         )

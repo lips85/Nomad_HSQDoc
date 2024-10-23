@@ -6,14 +6,17 @@ from langchain.callbacks.base import BaseCallbackHandler
 class ChatMemory:
     @staticmethod
     def save_message_db(message, role):
+        print(type(st.session_state["openai_model"]))
         response = requests.post(
             st.session_state["messages_url"],
             headers={"jwt": st.session_state.jwt},
             json={
                 "message_role": role,
                 "message_content": message,
+                "model": st.session_state["openai_model"],
             },
         )
+        print(response.json())
         if response.status_code != 200:
             st.error("Failed to Save Message")
 

@@ -17,12 +17,12 @@ class User(AbstractUser):
         default="",
         blank=True,
     )
-    # name = models.CharField(
-    #     max_length=150,
-    #     default="",
-    # )
     gender = models.CharField(
         max_length=10,
         choices=GenderChoices.choices,
         default="",
+    )
+    api_key = models.CharField(
+        max_length=200,
+        blank=True,
     )
