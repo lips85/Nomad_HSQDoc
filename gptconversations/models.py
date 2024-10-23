@@ -28,3 +28,13 @@ class Conversation(CommonModel):
 
     def __str__(self):
         return self.title
+
+    def total_tokens(self):
+        count = self.messages.count()
+        if count == 0:
+            return 0
+        else:
+            total_token_usage = 0
+            for token in self.messages.all().values("token"):
+                total_token_usage += token["token"]
+            return total_token_usage
