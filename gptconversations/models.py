@@ -38,3 +38,11 @@ class Conversation(CommonModel):
             for token in self.messages.all().values("token"):
                 total_token_usage += token["token"]
             return total_token_usage
+
+    def total_messages(self):
+        return self.messages.count()
+
+    def latest_used_model(self):
+        count = self.messages.count()
+        messages = self.messages.all()
+        return messages[count - 1].model

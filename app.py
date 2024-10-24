@@ -16,7 +16,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
 
 # 파일 분리 (상수들)
-from utils.constant.constant import OPENAI_MODEL, API_KEY_PATTERN, MODEL_PATTERN
+from utils.constant.constant import AI_MODEL, API_KEY_PATTERN, MODEL_PATTERN
 
 # 파일 분리 (함수들)
 from utils.functions.save_env import SaveEnv
@@ -202,6 +202,17 @@ if st.session_state["jwt"] is None:
                     else:
                         st.error("Register Fail")
 else:
+    # 유저의 api key 가져오기
+    response = requests.get(
+        USERS_URL + "profile/",
+        headers={"jwt": st.session_state.jwt},
+    )
+    if response.status_code == 200:
+        api_key = response.json()["api_key"]
+        if api_key != "":
+            st.session_state["api_key"] = api_key
+            st.session_state["api_key_check"] = True
+
     with st.sidebar:
         conversations_data = requests.get(
             CONVERSATIONS_URL,
@@ -283,6 +294,8 @@ else:
                     st.session_state["file_path"] = f"./.cache/files/{file_name}"
                     if st.session_state["file_name"] != "":
                         st.session_state["file_check"] = True
+
+                # 과거 사용한 모든 토큰과
 
         else:
             st.error("Please log in")
@@ -450,7 +463,7 @@ if st.session_state["is_login"]:
         st.divider()
         st.selectbox(
             "OpenAI Model을 골라주세요.",
-            options=OPENAI_MODEL,
+            options=AI_MODEL,
             on_change=SaveEnv.save_openai_model,
             key="openai_model",
         )

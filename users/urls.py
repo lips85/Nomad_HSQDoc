@@ -7,4 +7,5 @@ urlpatterns = [
     path("profile/password/", views.ChangePassword.as_view()),
     path("login/", views.JWTLogIn.as_view()),
     path("logout/", views.LogOut.as_view()),
+    path("stats/", views.UserStats.as_view()),
 ]
