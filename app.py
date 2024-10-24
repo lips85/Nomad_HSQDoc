@@ -3,6 +3,8 @@ import os
 import requests
 import streamlit as st
 
+from langchain.globals import set_verbose
+from langchain.callbacks import get_openai_callback
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.document_loaders.unstructured import UnstructuredFileLoader
@@ -33,6 +35,7 @@ USERS_URL = "http://127.0.0.1:8000/api/v1/users/"
 CONVERSATIONS_URL = "http://127.0.0.1:8000/api/v1/conversations/"
 MESSAGES_URL = "http://127.0.0.1:8000/api/v1/messages/"
 
+set_verbose(True)
 
 # front 손보기
 for key, default in [
@@ -349,7 +352,7 @@ if st.session_state["is_login"]:
                         try:
                             with st.chat_message("ai"):
                                 ai_answer = chain.invoke(message)
-                                ChatMemory.save_message_db(ai_answer.content, "ai")
+
                         except Exception as e:
                             st.error(f"An error occurred: {e}")
                             st.warning(

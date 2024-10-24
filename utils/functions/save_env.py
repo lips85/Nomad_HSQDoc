@@ -20,9 +20,8 @@ class SaveEnv:
                     "api_key": st.session_state["api_key"],
                 },
             )
-            print(response)
-            if response.status_code == 200:
-                print("success")
+            if response.status_code != 200:
+                st.error("Failed to save API key")
 
     @staticmethod
     def save_file():
