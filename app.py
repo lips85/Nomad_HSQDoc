@@ -215,10 +215,6 @@ else:
             st.session_state["claude_api_key"] = claude_api_key
             st.session_state["api_key_check"] = True
 
-    print(st.session_state["openai_api_key"])
-    print(st.session_state["claude_api_key"])
-    print(st.session_state["api_key_check"])
-
     with st.sidebar:
         conversations_data = requests.get(
             CONVERSATIONS_URL,
