@@ -3,14 +3,19 @@ import os
 import requests
 import streamlit as st
 
-from langchain.chat_models import ChatOpenAI, ChatAnthropic
+from langchain.chat_models import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.document_loaders.unstructured import UnstructuredFileLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.cache import CacheBackedEmbeddings
 from langchain.vectorstores.faiss import FAISS
 from langchain.storage import LocalFileStore
-from langchain.prompts import ChatPromptTemplate
+from langchain.prompts import (
+    ChatPromptTemplate,
+    HumanMessagePromptTemplate,
+    SystemMessagePromptTemplate,
+)
 from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
 
 # 파일 분리 (상수들)
@@ -57,8 +62,10 @@ for key, default in [
     ("file_path", None),
     # langchain
     ("messages", {}),
-    ("api_key", None),
-    ("api_key_check", False),
+    ("openai_api_key", None),
+    ("anthropic_api_key", None),
+    ("openai_api_key_check", False),
+    ("anthropic_api_key_check", False),
     ("openai_model", "선택해주세요"),
     ("openai_model_check", False),
     ("file_check", False),
@@ -102,7 +109,7 @@ class FileController:
         )
         loader = UnstructuredFileLoader(file_path)
         docs = loader.load_and_split(text_splitter=splitter)
-        embeddings = OpenAIEmbeddings(openai_api_key=st.session_state["api_key"])
+        embeddings = OpenAIEmbeddings(openai_api_key=st.session_state["openai_api_key"])
         cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
             embeddings, cache_dir
         )
@@ -206,16 +213,16 @@ if st.session_state["jwt"] is None:
                     else:
                         st.error("Register Fail")
 else:
-    # 유저의 api key 가져오기
-    response = requests.get(
-        USERS_URL + "profile/",
-        headers={"jwt": st.session_state.jwt},
-    )
-    if response.status_code == 200:
-        api_key = response.json()["api_key"]
-        if api_key != "":
-            st.session_state["api_key"] = api_key
-            st.session_state["api_key_check"] = True
+    # # 유저의 api key 가져오기
+    # response = requests.get(
+    #     USERS_URL + "profile/",
+    #     headers={"jwt": st.session_state.jwt},
+    # )
+    # if response.status_code == 200:
+    #     api_key = response.json()["api_key"]
+    #     if api_key != "":
+    #         st.session_state["api_key"] = api_key
+    #         st.session_state["api_key_check"] = True
 
     with st.sidebar:
         conversations_data = requests.get(
@@ -305,18 +312,19 @@ else:
     # 메인 로직
 if st.session_state["is_login"]:
     if (
-        st.session_state["api_key_check"]
+        st.session_state["openai_api_key_check"]
         and st.session_state["file_check"]
         and st.session_state["openai_model_check"]
     ):
         if chosen_option != "Create Conversation":
             if st.session_state["openai_model"] == AI_MODEL[1]:
+                print(st.session_state["openai_api_key"])
                 llm = ChatOpenAI(
                     temperature=0.1,
                     streaming=True,
                     callbacks=[ChatCallbackHandler()],
                     model=st.session_state["openai_model"],
-                    openai_api_key=st.session_state["api_key"],
+                    api_key=st.session_state["openai_api_key"],
                 )
                 print("you chose openai")
             elif st.session_state["openai_model"] == AI_MODEL[2]:
@@ -325,23 +333,22 @@ if st.session_state["is_login"]:
                     streaming=True,
                     # callbacks=[ChatCallbackHandler()],
                     model=st.session_state["openai_model"],
-                    anthropic_api_key=st.session_state["api_key"],
+                    anthropic_api_key=st.session_state["anthropic_api_key"],
                 )
                 print("you chose claude")
 
             prompt = ChatPromptTemplate.from_messages(
                 [
-                    (
-                        "system",
+                    SystemMessagePromptTemplate.from_template(
                         """
-                        You are an AI that reads documents for me. Please answer based on the document given below. 
-                        If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
-                        Please answer in the questioner's language 
-                        
-                        Context : {context}
-                        """,
+                    You are an AI that reads documents for me. Please answer based on the document given below. 
+                    If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
+                    Please answer in the questioner's language 
+                    
+                    Context : {context}
+                    """
                     ),
-                    ("human", "{question}"),
+                    HumanMessagePromptTemplate.from_template("{question}"),
                 ]
             )
             retriever = (
@@ -360,9 +367,9 @@ if st.session_state["is_login"]:
                 message = st.chat_input("Ask anything about your file...")
 
                 if message:
-                    if re.match(API_KEY_PATTERN, st.session_state["api_key"]) and (
-                        st.session_state["openai_model"] in AI_MODEL
-                    ):
+                    if re.match(
+                        API_KEY_PATTERN, st.session_state["openai_api_key"]
+                    ) and (st.session_state["openai_model"] in AI_MODEL):
                         ChatMemory.send_message(message, "human")
                         chain = (
                             {
@@ -456,25 +463,43 @@ if st.session_state["is_login"]:
                     st.warning("문서를 업로드해주세요.")
         st.divider()
         st.text_input(
-            "API_KEY 입력",
+            "OpenAI API_KEY 입력",
             placeholder="sk-...",
-            on_change=SaveEnv.save_api_key,
-            key="api_key",
+            # on_change=SaveEnv.save_openai_api_key,
+            key="openai_api_key",
         )
 
-        if st.session_state["api_key_check"]:
-            st.success("😄API_KEY가 저장되었습니다.😄")
+        if st.session_state["openai_api_key_check"]:
+            st.success("😄OpenAI API_KEY가 저장되었습니다.😄")
         else:
-            st.warning("API_KEY를 넣어주세요.")
+            st.warning("OpenAI API_KEY를 넣어주세요.")
 
         st.button(
-            "hary의 API_KEY (디버그용)",
-            on_click=Debug.my_api_key,
-            key="my_key_button",
+            "hary의 OpenAI API_KEY (디버그용)",
+            on_click=Debug.my_openai_api_key,
+            key="my_openai_key_button",
+        )
+
+        st.text_input(
+            "Anthropic API_KEY 입력",
+            placeholder="sk-...",
+            # on_change=SaveEnv.save_anthropic_api_key,
+            key="anthropic_api_key",
+        )
+
+        if st.session_state["anthropic_api_key_check"]:
+            st.success("😄Anthropic API_KEY가 저장되었습니다.😄")
+        else:
+            st.warning("Anthropic API_KEY를 넣어주세요.")
+
+        st.button(
+            "hary의 Anthropic API_KEY (디버그용)",
+            on_click=Debug.my_anthropic_api_key,
+            key="my_anthropic_key_button",
         )
         st.divider()
         st.selectbox(
-            "OpenAI Model을 골라주세요.",
+            "Model을 골라주세요.",
             options=AI_MODEL,
             on_change=SaveEnv.save_openai_model,
             key="openai_model",
