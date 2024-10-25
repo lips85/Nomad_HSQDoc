@@ -26,6 +26,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# 해야 할 것
+# 파일 모듈화
+# 보여주는 로직 변경
+# 사이드 바에 conversation 제목들을 보여주고, 클릭하면 메인 페이지에 반영되게
+# 통계화면 보여주는거
+
+
 # backend urls
 
 FILE_UPLOAD_URL = "http://127.0.0.1:8000/uploads/"
