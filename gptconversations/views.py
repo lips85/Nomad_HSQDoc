@@ -95,3 +95,21 @@ class ConversationDetail(APIView):
             raise PermissionDenied
         conversation.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ConversationUsage(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get_conversation(self, id):
+        try:
+            return Conversation.objects.get(id=id)
+        except:
+            raise NotFound
+
+    def get(self, request, id):
+        conversation = self.get_conversation(id)
+        if conversation.owner != request.user:
+            raise PermissionDenied
+        serializer = serializers.ConversationTotalUsageSerializer(conversation)
+        return Response(serializer.data)

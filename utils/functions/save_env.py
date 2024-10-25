@@ -1,6 +1,9 @@
 import re
+import requests
 import streamlit as st
 from utils.constant.constant import API_KEY_PATTERN
+
+USER_PROFILE_URL = "http://127.0.0.1:8000/api/v1/users/profile/"
 
 
 class SaveEnv:
@@ -9,6 +12,16 @@ class SaveEnv:
         st.session_state["api_key_check"] = bool(
             re.match(API_KEY_PATTERN, st.session_state["api_key"])
         )
+        if st.session_state["api_key_check"]:
+            response = requests.put(
+                USER_PROFILE_URL,
+                headers={"jwt": st.session_state.jwt},
+                json={
+                    "api_key": st.session_state["api_key"],
+                },
+            )
+            if response.status_code != 200:
+                st.error("Failed to save API key")
 
     @staticmethod
     def save_file():

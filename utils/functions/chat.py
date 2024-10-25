@@ -5,13 +5,15 @@ from langchain.callbacks.base import BaseCallbackHandler
 
 class ChatMemory:
     @staticmethod
-    def save_message_db(message, role):
+    def save_message_db(message, role, token=0):
         response = requests.post(
             st.session_state["messages_url"],
             headers={"jwt": st.session_state.jwt},
             json={
                 "message_role": role,
                 "message_content": message,
+                "model": st.session_state["openai_model"],
+                "token": token,
             },
         )
         if response.status_code != 200:
@@ -45,13 +47,16 @@ class ChatCallbackHandler(BaseCallbackHandler):
     def __init__(self):
         self.message = ""
         self.message_box = None
+        self.total_token = 0
 
     def on_llm_start(self, *args, **kwargs):
         self.message_box = st.empty()
 
     def on_llm_end(self, *args, **kwargs):
         ChatMemory.save_message(self.message, "ai")
+        ChatMemory.save_message_db(self.message, "ai", self.total_token)
 
     def on_llm_new_token(self, token, *args, **kwargs):
         self.message += token
         self.message_box.markdown(self.message)
+        self.total_token += 1

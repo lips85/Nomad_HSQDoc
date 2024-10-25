@@ -16,6 +16,7 @@ class CustomUserAdmin(UserAdmin):
                     "last_name",
                     "email",
                     "gender",
+                    "api_key",
                 ),
                 "classes": ("wide",),
             },

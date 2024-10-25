@@ -1,8 +1,9 @@
 import re
 import os
+import requests
 import streamlit as st
 
-from langchain.chat_models import ChatOpenAI
+from langchain.chat_models import ChatOpenAI, ChatAnthropic
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.document_loaders.unstructured import UnstructuredFileLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -11,10 +12,9 @@ from langchain.vectorstores.faiss import FAISS
 from langchain.storage import LocalFileStore
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
-import requests
 
 # 파일 분리 (상수들)
-from utils.constant.constant import OPENAI_MODEL, API_KEY_PATTERN, MODEL_PATTERN
+from utils.constant.constant import AI_MODEL, API_KEY_PATTERN
 
 # 파일 분리 (함수들)
 from utils.functions.save_env import SaveEnv
@@ -199,6 +199,17 @@ if st.session_state["jwt"] is None:
                     else:
                         st.error("Register Fail")
 else:
+    # 유저의 api key 가져오기
+    response = requests.get(
+        USERS_URL + "profile/",
+        headers={"jwt": st.session_state.jwt},
+    )
+    if response.status_code == 200:
+        api_key = response.json()["api_key"]
+        if api_key != "":
+            st.session_state["api_key"] = api_key
+            st.session_state["api_key_check"] = True
+
     with st.sidebar:
         conversations_data = requests.get(
             CONVERSATIONS_URL,
@@ -292,13 +303,24 @@ if st.session_state["is_login"]:
         and st.session_state["openai_model_check"]
     ):
         if chosen_option != "Create Conversation":
-            llm = ChatOpenAI(
-                temperature=0.1,
-                streaming=True,
-                callbacks=[ChatCallbackHandler()],
-                model=st.session_state["openai_model"],
-                openai_api_key=st.session_state["api_key"],
-            )
+            if st.session_state["openai_model"] == AI_MODEL[1]:
+                llm = ChatOpenAI(
+                    temperature=0.1,
+                    streaming=True,
+                    callbacks=[ChatCallbackHandler()],
+                    model=st.session_state["openai_model"],
+                    openai_api_key=st.session_state["api_key"],
+                )
+                print("you chose openai")
+            elif st.session_state["openai_model"] == AI_MODEL[2]:
+                llm = ChatAnthropic(
+                    temperature=0.1,
+                    streaming=True,
+                    # callbacks=[ChatCallbackHandler()],
+                    model=st.session_state["openai_model"],
+                    anthropic_api_key=st.session_state["api_key"],
+                )
+                print("you chose claude")
 
             prompt = ChatPromptTemplate.from_messages(
                 [
@@ -315,7 +337,6 @@ if st.session_state["is_login"]:
                     ("human", "{question}"),
                 ]
             )
-
             retriever = (
                 FileController.embed_file(
                     st.session_state["file_name"], st.session_state["file_path"]
@@ -332,9 +353,9 @@ if st.session_state["is_login"]:
                 message = st.chat_input("Ask anything about your file...")
 
                 if message:
-                    if re.match(
-                        API_KEY_PATTERN, st.session_state["api_key"]
-                    ) and re.match(MODEL_PATTERN, st.session_state["openai_model"]):
+                    if re.match(API_KEY_PATTERN, st.session_state["api_key"]) and (
+                        st.session_state["openai_model"] in AI_MODEL
+                    ):
                         ChatMemory.send_message(message, "human")
                         chain = (
                             {
@@ -349,7 +370,7 @@ if st.session_state["is_login"]:
                         try:
                             with st.chat_message("ai"):
                                 ai_answer = chain.invoke(message)
-                                ChatMemory.save_message_db(ai_answer.content, "ai")
+
                         except Exception as e:
                             st.error(f"An error occurred: {e}")
                             st.warning(
@@ -447,7 +468,7 @@ if st.session_state["is_login"]:
         st.divider()
         st.selectbox(
             "OpenAI Model을 골라주세요.",
-            options=OPENAI_MODEL,
+            options=AI_MODEL,
             on_change=SaveEnv.save_openai_model,
             key="openai_model",
         )

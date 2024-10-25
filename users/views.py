@@ -144,3 +144,13 @@ class LogOut(APIView):
         logout(request)
         response = Response({"ok": "bye!"})
         return response
+
+
+class UserStats(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        serializer = serializers.UserStatsSerializer(user)
+        return Response(serializer.data)
