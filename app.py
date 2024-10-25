@@ -50,7 +50,8 @@ for key, default in [
     ("file_path", None),
     # langchain
     ("messages", {}),
-    ("api_key", None),
+    ("openai_api_key", None),
+    ("claude_api_key", None),
     ("api_key_check", False),
     ("openai_model", "선택해주세요"),
     ("openai_model_check", False),
@@ -205,10 +206,18 @@ else:
         headers={"jwt": st.session_state.jwt},
     )
     if response.status_code == 200:
-        api_key = response.json()["api_key"]
-        if api_key != "":
-            st.session_state["api_key"] = api_key
+        openai_api_key = response.json()["openai_api_key"]
+        claude_api_key = response.json()["claude_api_key"]
+        if openai_api_key != "":
+            st.session_state["openai_api_key"] = openai_api_key
             st.session_state["api_key_check"] = True
+        if claude_api_key != "":
+            st.session_state["claude_api_key"] = claude_api_key
+            st.session_state["api_key_check"] = True
+
+    print(st.session_state["openai_api_key"])
+    print(st.session_state["claude_api_key"])
+    print(st.session_state["api_key_check"])
 
     with st.sidebar:
         conversations_data = requests.get(
@@ -448,25 +457,8 @@ if st.session_state["is_login"]:
                 else:
                     st.warning("문서를 업로드해주세요.")
         st.divider()
-        st.text_input(
-            "API_KEY 입력",
-            placeholder="sk-...",
-            on_change=SaveEnv.save_api_key,
-            key="api_key",
-        )
 
-        if st.session_state["api_key_check"]:
-            st.success("😄API_KEY가 저장되었습니다.😄")
-        else:
-            st.warning("API_KEY를 넣어주세요.")
-
-        st.button(
-            "hary의 API_KEY (디버그용)",
-            on_click=Debug.my_api_key,
-            key="my_key_button",
-        )
-        st.divider()
-        st.selectbox(
+        chosen_model = st.selectbox(
             "OpenAI Model을 골라주세요.",
             options=AI_MODEL,
             on_change=SaveEnv.save_openai_model,
@@ -477,6 +469,36 @@ if st.session_state["is_login"]:
             st.success("😄모델이 선택되었습니다.😄")
         else:
             st.warning("모델을 선택해주세요.")
+        st.divider()
+        if chosen_model == AI_MODEL[1]:
+            st.text_input(
+                "API_KEY 입력",
+                placeholder="sk-...",
+                on_change=SaveEnv.save_openai_api_key,
+                key="openai_api_key",
+            )
+            if st.session_state["api_key_check"]:
+                st.success("😄API_KEY가 저장되었습니다.😄")
+            else:
+                st.warning("API_KEY를 넣어주세요.")
+
+        elif chosen_model == AI_MODEL[2]:
+            st.text_input(
+                "API_KEY 입력",
+                placeholder="sk-...",
+                on_change=SaveEnv.save_claude_api_key,
+                key="claude_api_key",
+            )
+            if st.session_state["api_key_check"]:
+                st.success("😄API_KEY가 저장되었습니다.😄")
+            else:
+                st.warning("API_KEY를 넣어주세요.")
+
+        st.button(
+            "hary의 API_KEY (디버그용)",
+            on_click=Debug.my_api_key,
+            key="my_key_button",
+        )
         st.divider()
         st.write(
             """
