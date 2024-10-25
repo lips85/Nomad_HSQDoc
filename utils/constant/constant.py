@@ -8,7 +8,7 @@ MODEL_PATTERN = r"gpt-*"
 AI_MODEL = [
     "선택해주세요",
     "gpt-4o-2024-08-06",
-    "claude 3.5 sonnet",
+    "claude-3-5-sonnet-20241022",
 ]
 
 AI_PRICING_PER_MILLION_TOKENS = {

@@ -51,35 +51,24 @@ class User(AbstractUser):
                     )
                 else:
                     claude_total_tokens += message.token
-            if (openai_total_cost / 1000000) < 0.01:
-                openai_total_cost = "< $0.01"
-            else:
-                openai_total_cost = f"${round(openai_total_cost / 1000000, 2)}"
-
-            if (claude_total_cost / 1000000) < 0.01:
-                claude_total_cost = "< $0.01"
-            else:
-                claude_total_cost = f"${round(openai_total_cost / 1000000, 2)}"
-
-            if (total_cost / 1000000) < 0.01:
-                total_cost = "< $0.01"
-            else:
-                total_cost = f"${round(openai_total_cost / 1000000, 2)}"
+                    claude_total_cost += (
+                        AI_PRICING_PER_MILLION_TOKENS[AI_MODEL[2]] * claude_total_tokens
+                    )
             total_conversations.append(
                 {
                     "title": title,
                     "total_messages": total_messages,
                     "total_tokens": total_tokens,
-                    "total_cost": total_cost,
+                    "total_cost": round(total_cost / 1000000, 2),
                     "file_name": file_name,
                     "models": {
                         AI_MODEL[1]: {
                             "tokens": openai_total_tokens,
-                            "cost": openai_total_cost,
+                            "cost": round(openai_total_cost / 1000000, 2),
                         },
                         AI_MODEL[2]: {
                             "tokens": claude_total_tokens,
-                            "cost": claude_total_cost,
+                            "cost": round(claude_total_cost / 1000000, 2),
                         },
                     },
                 }
