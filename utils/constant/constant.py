@@ -1,6 +1,6 @@
 # API 키 패턴과 모델 패턴 정의
 API_KEY_PATTERN = r"sk-.*"
-MODEL_PATTERN = r"gpt-*"
+# MODEL_PATTERN = r"gpt-*"
 
 # 사용 가능한 AI 모델 목록
 # 첫번재 모델이 openai

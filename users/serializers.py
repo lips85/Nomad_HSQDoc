@@ -32,14 +32,16 @@ class UserStatsSerializer(serializers.ModelSerializer):
     user_total_conversations = serializers.SerializerMethodField()
     user_total_messages = serializers.SerializerMethodField()
     user_total_tokens = serializers.SerializerMethodField()
+    user_total_cost = serializers.SerializerMethodField()
     total_files = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             "user_total_conversations",
-            "user_total_messages",
             "user_total_tokens",
+            "user_total_cost",
+            "user_total_messages",
             "total_files",
         )
 
@@ -51,6 +53,9 @@ class UserStatsSerializer(serializers.ModelSerializer):
 
     def get_user_total_tokens(self, user):
         return user.total_tokens()
+
+    def get_user_total_cost(self, user):
+        return user.total_cost()
 
     def get_total_files(self, user):
         return user.total_files()

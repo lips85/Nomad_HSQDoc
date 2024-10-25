@@ -41,8 +41,6 @@ class User(AbstractUser):
             openai_total_cost = 0
             claude_total_tokens = 0
             claude_total_cost = 0
-            total_tokens = openai_total_tokens + claude_total_tokens
-            total_cost = openai_total_cost + claude_total_cost
             for message in messages:
                 if message.model == AI_MODEL[1]:
                     openai_total_tokens += message.token
@@ -54,21 +52,23 @@ class User(AbstractUser):
                     claude_total_cost += (
                         AI_PRICING_PER_MILLION_TOKENS[AI_MODEL[2]] * claude_total_tokens
                     )
+            total_tokens = openai_total_tokens + claude_total_tokens
+            total_cost = openai_total_cost + claude_total_cost
             total_conversations.append(
                 {
                     "title": title,
                     "total_messages": total_messages,
                     "total_tokens": total_tokens,
-                    "total_cost": round(total_cost / 1000000, 2),
+                    "total_cost_per_1M_tokens": total_cost,
                     "file_name": file_name,
                     "models": {
                         AI_MODEL[1]: {
                             "tokens": openai_total_tokens,
-                            "cost": round(openai_total_cost / 1000000, 2),
+                            "cost_per_1M_tokens": openai_total_cost,
                         },
                         AI_MODEL[2]: {
                             "tokens": claude_total_tokens,
-                            "cost": round(claude_total_cost / 1000000, 2),
+                            "cost_per_1M_tokens": claude_total_cost,
                         },
                     },
                 }
@@ -87,13 +87,43 @@ class User(AbstractUser):
 
     def total_tokens(self):
         total_tokens = 0
+        total_tokens_openai = 0
+        total_tokens_claude = 0
 
-        conversations = self.conversations.all()
-        for conversation in conversations:
-            for token in conversation.messages.all().values("token"):
-                total_tokens += token["token"]
+        total_conversations = self.total_conversations()
+        for conversation in total_conversations:
+            total_tokens += conversation["total_tokens"]
+            total_tokens_openai += conversation["models"][AI_MODEL[1]]["tokens"]
+            total_tokens_claude += conversation["models"][AI_MODEL[2]]["tokens"]
 
-        return total_tokens
+        user_total_tokens = {
+            "total_tokens": total_tokens,
+            "total_tokens_openai": total_tokens_openai,
+            "total_tokens_claude": total_tokens_claude,
+        }
+        return user_total_tokens
+
+    def total_cost(self):
+        total_cost = 0
+        total_cost_openai = 0
+        total_cost_claude = 0
+
+        total_conversations = self.total_conversations()
+        for conversation in total_conversations:
+            total_cost += conversation["total_cost_per_1M_tokens"]
+            total_cost_openai += conversation["models"][AI_MODEL[1]][
+                "cost_per_1M_tokens"
+            ]
+            total_cost_claude += conversation["models"][AI_MODEL[2]][
+                "cost_per_1M_tokens"
+            ]
+
+        user_total_cost = {
+            "total_cost_per_1M_tokens": total_cost,
+            "total_cost_openai_per_1M_tokens": total_cost_openai,
+            "total_cost_claude_per_1M_tokens": total_cost_claude,
+        }
+        return user_total_cost
 
     def total_files(self):
         total_files = []

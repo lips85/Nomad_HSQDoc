@@ -3,9 +3,7 @@ import os
 import requests
 import streamlit as st
 
-from langchain.globals import set_verbose
-from langchain.callbacks import get_openai_callback
-from langchain.chat_models import ChatOpenAI
+from langchain.chat_models import ChatOpenAI, ChatAnthropic
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.document_loaders.unstructured import UnstructuredFileLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -16,7 +14,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
 
 # 파일 분리 (상수들)
-from utils.constant.constant import AI_MODEL, API_KEY_PATTERN, MODEL_PATTERN
+from utils.constant.constant import AI_MODEL, API_KEY_PATTERN
 
 # 파일 분리 (함수들)
 from utils.functions.save_env import SaveEnv
@@ -35,7 +33,6 @@ USERS_URL = "http://127.0.0.1:8000/api/v1/users/"
 CONVERSATIONS_URL = "http://127.0.0.1:8000/api/v1/conversations/"
 MESSAGES_URL = "http://127.0.0.1:8000/api/v1/messages/"
 
-set_verbose(True)
 
 # front 손보기
 for key, default in [
@@ -295,8 +292,6 @@ else:
                     if st.session_state["file_name"] != "":
                         st.session_state["file_check"] = True
 
-                # 과거 사용한 모든 토큰과
-
         else:
             st.error("Please log in")
 
@@ -308,13 +303,24 @@ if st.session_state["is_login"]:
         and st.session_state["openai_model_check"]
     ):
         if chosen_option != "Create Conversation":
-            llm = ChatOpenAI(
-                temperature=0.1,
-                streaming=True,
-                callbacks=[ChatCallbackHandler()],
-                model=st.session_state["openai_model"],
-                openai_api_key=st.session_state["api_key"],
-            )
+            if st.session_state["openai_model"] == AI_MODEL[1]:
+                llm = ChatOpenAI(
+                    temperature=0.1,
+                    streaming=True,
+                    callbacks=[ChatCallbackHandler()],
+                    model=st.session_state["openai_model"],
+                    openai_api_key=st.session_state["api_key"],
+                )
+                print("you chose openai")
+            elif st.session_state["openai_model"] == AI_MODEL[2]:
+                llm = ChatAnthropic(
+                    temperature=0.1,
+                    streaming=True,
+                    # callbacks=[ChatCallbackHandler()],
+                    model=st.session_state["openai_model"],
+                    anthropic_api_key=st.session_state["api_key"],
+                )
+                print("you chose claude")
 
             prompt = ChatPromptTemplate.from_messages(
                 [
@@ -331,7 +337,6 @@ if st.session_state["is_login"]:
                     ("human", "{question}"),
                 ]
             )
-
             retriever = (
                 FileController.embed_file(
                     st.session_state["file_name"], st.session_state["file_path"]
@@ -348,9 +353,9 @@ if st.session_state["is_login"]:
                 message = st.chat_input("Ask anything about your file...")
 
                 if message:
-                    if re.match(
-                        API_KEY_PATTERN, st.session_state["api_key"]
-                    ) and re.match(MODEL_PATTERN, st.session_state["openai_model"]):
+                    if re.match(API_KEY_PATTERN, st.session_state["api_key"]) and (
+                        st.session_state["openai_model"] in AI_MODEL
+                    ):
                         ChatMemory.send_message(message, "human")
                         chain = (
                             {
