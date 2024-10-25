@@ -6,7 +6,7 @@ import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.document_loaders import UnstructuredFileLoader
+from langchain_unstructured import UnstructuredLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.cache import CacheBackedEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -61,7 +61,8 @@ for key, default in [
     ("messages", {}),
     ("openai_api_key", None),
     ("claude_api_key", None),
-    ("api_key_check", False),
+    ("openai_api_key_check", False),
+    ("claude_api_key_check", False),
     ("openai_model", "선택해주세요"),
     ("openai_model_check", False),
     ("file_check", False),
@@ -103,7 +104,7 @@ class FileController:
             chunk_size=1000,
             chunk_overlap=100,
         )
-        loader = UnstructuredFileLoader(file_path)
+        loader = UnstructuredLoader(file_path)
         docs = loader.load_and_split(text_splitter=splitter)
         embeddings = OpenAIEmbeddings(openai_api_key=st.session_state["openai_api_key"])
         cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
@@ -219,10 +220,10 @@ else:
         claude_api_key = response.json()["claude_api_key"]
         if openai_api_key != "":
             st.session_state["openai_api_key"] = openai_api_key
-            st.session_state["api_key_check"] = True
+            st.session_state["openai_api_key_check"] = True
         if claude_api_key != "":
             st.session_state["claude_api_key"] = claude_api_key
-            st.session_state["api_key_check"] = True
+            st.session_state["claude_api_key_check"] = True
 
     with st.sidebar:
         conversations_data = requests.get(
@@ -317,8 +318,8 @@ if st.session_state["is_login"]:
         and st.session_state["openai_model_check"]
     ):
         if chosen_option != "Create Conversation":
+            print("test")
             if st.session_state["openai_model"] == AI_MODEL[1]:
-                print(st.session_state["openai_api_key"])
                 llm = ChatOpenAI(
                     temperature=0.1,
                     streaming=True,
@@ -467,7 +468,7 @@ if st.session_state["is_login"]:
         st.text_input(
             "OpenAI API_KEY 입력",
             placeholder="sk-...",
-            # on_change=SaveEnv.save_openai_api_key,
+            on_change=SaveEnv.save_openai_api_key,
             key="openai_api_key",
         )
 
@@ -485,11 +486,11 @@ if st.session_state["is_login"]:
         st.text_input(
             "Anthropic API_KEY 입력",
             placeholder="sk-...",
-            # on_change=SaveEnv.save_anthropic_api_key,
-            key="anthropic_api_key",
+            on_change=SaveEnv.save_claude_api_key,
+            key="claude_api_key",
         )
 
-        if st.session_state["anthropic_api_key_check"]:
+        if st.session_state["claude_api_key_check"]:
             st.success("😄Anthropic API_KEY가 저장되었습니다.😄")
         else:
             st.warning("Anthropic API_KEY를 넣어주세요.")
@@ -512,36 +513,7 @@ if st.session_state["is_login"]:
         else:
             st.warning("모델을 선택해주세요.")
         st.divider()
-        # if chosen_model == AI_MODEL[1]:
-        #     st.text_input(
-        #         "API_KEY 입력",
-        #         placeholder="sk-...",
-        #         on_change=SaveEnv.save_openai_api_key,
-        #         key="openai_api_key",
-        #     )
-        #     if st.session_state["api_key_check"]:
-        #         st.success("😄API_KEY가 저장되었습니다.😄")
-        #     else:
-        #         st.warning("API_KEY를 넣어주세요.")
 
-        # elif chosen_model == AI_MODEL[2]:
-        #     st.text_input(
-        #         "API_KEY 입력",
-        #         placeholder="sk-...",
-        #         on_change=SaveEnv.save_claude_api_key,
-        #         key="claude_api_key",
-        #     )
-        #     if st.session_state["api_key_check"]:
-        #         st.success("😄API_KEY가 저장되었습니다.😄")
-        #     else:
-        #         st.warning("API_KEY를 넣어주세요.")
-
-        st.button(
-            "hary의 API_KEY (디버그용)",
-            on_click=Debug.my_api_key,
-            key="my_key_button",
-        )
-        st.divider()
         st.write(
             """
                 Made by hary, seedjin298.
