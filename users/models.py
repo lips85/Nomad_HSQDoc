@@ -23,7 +23,11 @@ class User(AbstractUser):
         choices=GenderChoices.choices,
         default="",
     )
-    api_key = models.CharField(
+    openai_api_key = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+    claude_api_key = models.CharField(
         max_length=200,
         blank=True,
     )
@@ -62,11 +66,11 @@ class User(AbstractUser):
                     "total_cost_per_1M_tokens": total_cost,
                     "file_name": file_name,
                     "models": {
-                        AI_MODEL[1]: {
+                        "openai": {
                             "tokens": openai_total_tokens,
                             "cost_per_1M_tokens": openai_total_cost,
                         },
-                        AI_MODEL[2]: {
+                        "claude": {
                             "tokens": claude_total_tokens,
                             "cost_per_1M_tokens": claude_total_cost,
                         },
@@ -93,8 +97,8 @@ class User(AbstractUser):
         total_conversations = self.total_conversations()
         for conversation in total_conversations:
             total_tokens += conversation["total_tokens"]
-            total_tokens_openai += conversation["models"][AI_MODEL[1]]["tokens"]
-            total_tokens_claude += conversation["models"][AI_MODEL[2]]["tokens"]
+            total_tokens_openai += conversation["models"]["openai"]["tokens"]
+            total_tokens_claude += conversation["models"]["claude"]["tokens"]
 
         user_total_tokens = {
             "total_tokens": total_tokens,
@@ -111,12 +115,8 @@ class User(AbstractUser):
         total_conversations = self.total_conversations()
         for conversation in total_conversations:
             total_cost += conversation["total_cost_per_1M_tokens"]
-            total_cost_openai += conversation["models"][AI_MODEL[1]][
-                "cost_per_1M_tokens"
-            ]
-            total_cost_claude += conversation["models"][AI_MODEL[2]][
-                "cost_per_1M_tokens"
-            ]
+            total_cost_openai += conversation["models"]["openai"]["cost_per_1M_tokens"]
+            total_cost_claude += conversation["models"]["claude"]["cost_per_1M_tokens"]
 
         user_total_cost = {
             "total_cost_per_1M_tokens": total_cost,
