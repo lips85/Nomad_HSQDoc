@@ -3,20 +3,17 @@ import os
 import requests
 import streamlit as st
 
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.document_loaders.unstructured import UnstructuredFileLoader
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.cache import CacheBackedEmbeddings
-from langchain.vectorstores.faiss import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain.storage import LocalFileStore
-from langchain.prompts import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-    SystemMessagePromptTemplate,
-)
+from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
+
 
 # 파일 분리 (상수들)
 from utils.constant.constant import AI_MODEL, API_KEY_PATTERN
@@ -154,7 +151,7 @@ if st.session_state["jwt"] is None:
                     token = response.json()["token"]
                     st.session_state.jwt = token
                     st.session_state["username"] = username
-                    # 로그인 후 rerun 하는걸로 form 안 보이게 하기
+                    # 로인 후 rerun 하는걸로 form 안 보이게 하기
                     # 그대신 rerun하면 st.success가 안 보이게 된다: 생기자마자 rerun으로 사라지기 때문
                     # st.success("Welcome! You are logged in!")
                     st.rerun()
@@ -339,16 +336,17 @@ if st.session_state["is_login"]:
 
             prompt = ChatPromptTemplate.from_messages(
                 [
-                    SystemMessagePromptTemplate.from_template(
+                    (
+                        "system",
                         """
-                    You are an AI that reads documents for me. Please answer based on the document given below. 
-                    If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
-                    Please answer in the questioner's language 
-                    
-                    Context : {context}
-                    """
+                        You are an AI that reads documents for me. Please answer based on the document given below. 
+                        If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
+                        Please answer in the questioner's language 
+                        
+                        Context : {context}
+                        """,
                     ),
-                    HumanMessagePromptTemplate.from_template("{question}"),
+                    ("human", "{question}"),
                 ]
             )
             retriever = (
@@ -440,7 +438,7 @@ if st.session_state["is_login"]:
                 on_click=SaveEnv.save_file,
             )
             if upload_request:
-                # 파일을 장고에 저장
+                # 파일을 장에 저장
 
                 os.makedirs("./.cache/files", exist_ok=True)
                 st.session_state["file_path"] = f"./.cache/files/{uploaded_file.name}"
@@ -506,7 +504,7 @@ if st.session_state["is_login"]:
         )
 
         if st.session_state["openai_model_check"]:
-            st.success("😄모델이 선택되었습니다.😄")
+            st.success("😄모델이 선택되었니다.😄")
         else:
             st.warning("모델을 선택해주세요.")
         st.divider()
