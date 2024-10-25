@@ -96,7 +96,7 @@ class FileController:
         )
         loader = UnstructuredFileLoader(file_path)
         docs = loader.load_and_split(text_splitter=splitter)
-        embeddings = OpenAIEmbeddings(openai_api_key=st.session_state["api_key"])
+        embeddings = OpenAIEmbeddings(openai_api_key=st.session_state["openai_api_key"])
         cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
             embeddings, cache_dir
         )
@@ -314,7 +314,7 @@ if st.session_state["is_login"]:
                     streaming=True,
                     callbacks=[ChatCallbackHandler()],
                     model=st.session_state["openai_model"],
-                    openai_api_key=st.session_state["api_key"],
+                    openai_api_key=st.session_state["openai_api_key"],
                 )
                 print("you chose openai")
             elif st.session_state["openai_model"] == AI_MODEL[2]:
@@ -323,7 +323,7 @@ if st.session_state["is_login"]:
                     streaming=True,
                     # callbacks=[ChatCallbackHandler()],
                     model=st.session_state["openai_model"],
-                    anthropic_api_key=st.session_state["api_key"],
+                    anthropic_api_key=st.session_state["claude_api_key"],
                 )
                 print("you chose claude")
 
@@ -358,9 +358,10 @@ if st.session_state["is_login"]:
                 message = st.chat_input("Ask anything about your file...")
 
                 if message:
-                    if re.match(API_KEY_PATTERN, st.session_state["api_key"]) and (
-                        st.session_state["openai_model"] in AI_MODEL
-                    ):
+                    if (
+                        re.match(API_KEY_PATTERN, st.session_state["openai_api_key"])
+                        or re.match(API_KEY_PATTERN, st.session_state["claude_api_key"])
+                    ) and (st.session_state["openai_model"] in AI_MODEL):
                         ChatMemory.send_message(message, "human")
                         chain = (
                             {
