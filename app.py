@@ -5,14 +5,18 @@ import streamlit as st
 
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
-from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_unstructured import UnstructuredLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.embeddings.cache import CacheBackedEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.storage import LocalFileStore
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
+from langchain_core.prompts import ChatPromptTemplate
+
+
+from langchain_core.runnables import RunnableLambda
+
+from langchain_core.runnables import RunnablePassthrough
 
 
 # 파일 분리 (상수들)
@@ -318,7 +322,6 @@ if st.session_state["is_login"]:
         and st.session_state["openai_model_check"]
     ):
         if chosen_option != "Create Conversation":
-            print("test")
             if st.session_state["openai_model"] == AI_MODEL[1]:
                 llm = ChatOpenAI(
                     temperature=0.1,
