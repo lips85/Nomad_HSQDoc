@@ -68,9 +68,11 @@ for key, default in [
     # langchain
     ("messages", {}),
     ("openai_api_key", None),
+
     ("claude_api_key", None),
     ("openai_api_key_check", False),
     ("claude_api_key_check", False),
+
     ("openai_model", "선택해주세요"),
     ("openai_model_check", False),
     ("file_check", False),
@@ -218,6 +220,7 @@ if st.session_state["jwt"] is None:
                     else:
                         st.error("Register Fail")
 else:
+
     # 유저의 api key 가져오기
     response = requests.get(
         USERS_URL + "profile/",
@@ -232,6 +235,7 @@ else:
         if claude_api_key != "":
             st.session_state["claude_api_key"] = claude_api_key
             st.session_state["claude_api_key_check"] = True
+
 
     with st.sidebar:
         conversations_data = requests.get(
@@ -333,6 +337,7 @@ if st.session_state["is_login"]:
                     callbacks=[ChatCallbackHandler()],
                     model=st.session_state["openai_model"],
                     openai_api_key=st.session_state["openai_api_key"],
+
                 )
                 print("you chose openai")
             elif st.session_state["openai_model"] == AI_MODEL[2]:
@@ -342,6 +347,7 @@ if st.session_state["is_login"]:
                     callbacks=[ChatCallbackHandler()],
                     model=st.session_state["openai_model"],
                     anthropic_api_key=st.session_state["claude_api_key"],
+
                 )
                 print("you chose claude")
 
@@ -380,6 +386,7 @@ if st.session_state["is_login"]:
                     if (
                         re.match(API_KEY_PATTERN, st.session_state["openai_api_key"])
                         or re.match(API_KEY_PATTERN, st.session_state["claude_api_key"])
+
                     ) and (st.session_state["openai_model"] in AI_MODEL):
                         ChatMemory.send_message(message, "human")
                         chain = (
@@ -473,6 +480,7 @@ if st.session_state["is_login"]:
                 else:
                     st.warning("문서를 업로드해주세요.")
         st.divider()
+
         st.text_input(
             "OpenAI API_KEY 입력",
             placeholder="sk-...",
@@ -503,14 +511,7 @@ if st.session_state["is_login"]:
         else:
             st.warning("Anthropic API_KEY를 넣어주세요.")
 
-        st.button(
-            "hary의 Anthropic API_KEY (디버그용)",
-            on_click=Debug.my_anthropic_api_key,
-            key="my_anthropic_key_button",
-        )
-        st.divider()
-        st.selectbox(
-            "Model을 골라주세요.",
+
             options=AI_MODEL,
             on_change=SaveEnv.save_openai_model,
             key="openai_model",
