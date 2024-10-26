@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from langchain.callbacks.base import BaseCallbackHandler
+from langchain_core.callbacks import BaseCallbackHandler
 
 
 class ChatMemory:
@@ -57,6 +57,7 @@ class ChatCallbackHandler(BaseCallbackHandler):
         ChatMemory.save_message_db(self.message, "ai", self.total_token)
 
     def on_llm_new_token(self, token, *args, **kwargs):
+        print(token)
         self.message += token
         self.message_box.markdown(self.message)
         self.total_token += 1

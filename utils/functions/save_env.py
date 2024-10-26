@@ -9,10 +9,12 @@ USER_PROFILE_URL = "http://127.0.0.1:8000/api/v1/users/profile/"
 class SaveEnv:
     @staticmethod
     def save_openai_api_key():
-        st.session_state["api_key_check"] = bool(
+
+        st.session_state["openai_api_key_check"] = bool(
+
             re.match(API_KEY_PATTERN, st.session_state["openai_api_key"])
         )
-        if st.session_state["api_key_check"]:
+        if st.session_state["openai_api_key_check"]:
             response = requests.put(
                 USER_PROFILE_URL,
                 headers={"jwt": st.session_state.jwt},
@@ -25,10 +27,12 @@ class SaveEnv:
 
     @staticmethod
     def save_claude_api_key():
-        st.session_state["api_key_check"] = bool(
+
+        st.session_state["claude_api_key_check"] = bool(
             re.match(API_KEY_PATTERN, st.session_state["claude_api_key"])
         )
-        if st.session_state["api_key_check"]:
+        if st.session_state["claude_api_key_check"]:
+
             response = requests.put(
                 USER_PROFILE_URL,
                 headers={"jwt": st.session_state.jwt},
