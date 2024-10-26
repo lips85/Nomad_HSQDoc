@@ -3,10 +3,11 @@ import os
 import requests
 import streamlit as st
 
+# from langchain.globals import set_debug
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import OpenAIEmbeddings
-from langchain_unstructured import UnstructuredLoader
+from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.embeddings.cache import CacheBackedEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -31,6 +32,9 @@ from utils.functions.chat import ChatMemory, ChatCallbackHandler
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# 디버그용 2
+# set_debug(True)
 
 # 해야 할 것
 # 파일 모듈화
@@ -108,7 +112,7 @@ class FileController:
             chunk_size=1000,
             chunk_overlap=100,
         )
-        loader = UnstructuredLoader(file_path)
+        loader = UnstructuredFileLoader(file_path)
         docs = loader.load_and_split(text_splitter=splitter)
         embeddings = OpenAIEmbeddings(openai_api_key=st.session_state["openai_api_key"])
         cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
@@ -335,7 +339,7 @@ if st.session_state["is_login"]:
                 llm = ChatAnthropic(
                     temperature=0.1,
                     streaming=True,
-                    # callbacks=[ChatCallbackHandler()],
+                    callbacks=[ChatCallbackHandler()],
                     model=st.session_state["openai_model"],
                     anthropic_api_key=st.session_state["claude_api_key"],
                 )
@@ -347,6 +351,7 @@ if st.session_state["is_login"]:
                         "system",
                         """
                         You are an AI that reads documents for me. Please answer based on the document given below. 
+                        Make sure to check every detail inside the document.
                         If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
                         Please answer in the questioner's language 
                         

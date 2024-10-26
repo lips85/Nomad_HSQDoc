@@ -7,7 +7,7 @@ API_KEY_PATTERN = r"sk-*"
 #  두번째 모델이 claude
 AI_MODEL = [
     "선택해주세요",
-    "gpt-4o-2024-08-06",
+    "gpt-4o-mini-2024-07-18",
     "claude-3-sonnet-20240229",
 ]
 
