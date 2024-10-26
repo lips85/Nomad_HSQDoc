@@ -1,20 +1,27 @@
 import re
 import os
+import requests
 import streamlit as st
 
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.document_loaders.unstructured import UnstructuredFileLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+# from langchain.globals import set_debug
+from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.document_loaders import UnstructuredFileLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.embeddings.cache import CacheBackedEmbeddings
-from langchain.vectorstores.faiss import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain.storage import LocalFileStore
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
-import requests
+from langchain_core.prompts import ChatPromptTemplate
+
+
+from langchain_core.runnables import RunnableLambda
+
+from langchain_core.runnables import RunnablePassthrough
+
 
 # 파일 분리 (상수들)
-from utils.constant.constant import OPENAI_MODEL, API_KEY_PATTERN, MODEL_PATTERN
+from utils.constant.constant import AI_MODEL, API_KEY_PATTERN
 
 # 파일 분리 (함수들)
 from utils.functions.save_env import SaveEnv
@@ -25,6 +32,16 @@ from utils.functions.chat import ChatMemory, ChatCallbackHandler
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# 디버그용 2
+# set_debug(True)
+
+# 해야 할 것
+# 파일 모듈화
+# 보여주는 로직 변경
+# 사이드 바에 conversation 제목들을 보여주고, 클릭하면 메인 페이지에 반영되게
+# 통계화면 보여주는거
+
 
 # backend urls
 
@@ -50,8 +67,12 @@ for key, default in [
     ("file_path", None),
     # langchain
     ("messages", {}),
-    ("api_key", None),
-    ("api_key_check", False),
+    ("openai_api_key", None),
+
+    ("claude_api_key", None),
+    ("openai_api_key_check", False),
+    ("claude_api_key_check", False),
+
     ("openai_model", "선택해주세요"),
     ("openai_model_check", False),
     ("file_check", False),
@@ -95,7 +116,7 @@ class FileController:
         )
         loader = UnstructuredFileLoader(file_path)
         docs = loader.load_and_split(text_splitter=splitter)
-        embeddings = OpenAIEmbeddings(openai_api_key=st.session_state["api_key"])
+        embeddings = OpenAIEmbeddings(openai_api_key=st.session_state["openai_api_key"])
         cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
             embeddings, cache_dir
         )
@@ -140,7 +161,7 @@ if st.session_state["jwt"] is None:
                     token = response.json()["token"]
                     st.session_state.jwt = token
                     st.session_state["username"] = username
-                    # 로그인 후 rerun 하는걸로 form 안 보이게 하기
+                    # 로인 후 rerun 하는걸로 form 안 보이게 하기
                     # 그대신 rerun하면 st.success가 안 보이게 된다: 생기자마자 rerun으로 사라지기 때문
                     # st.success("Welcome! You are logged in!")
                     st.rerun()
@@ -199,6 +220,23 @@ if st.session_state["jwt"] is None:
                     else:
                         st.error("Register Fail")
 else:
+
+    # 유저의 api key 가져오기
+    response = requests.get(
+        USERS_URL + "profile/",
+        headers={"jwt": st.session_state.jwt},
+    )
+    if response.status_code == 200:
+        openai_api_key = response.json()["openai_api_key"]
+        claude_api_key = response.json()["claude_api_key"]
+        if openai_api_key != "":
+            st.session_state["openai_api_key"] = openai_api_key
+            st.session_state["openai_api_key_check"] = True
+        if claude_api_key != "":
+            st.session_state["claude_api_key"] = claude_api_key
+            st.session_state["claude_api_key_check"] = True
+
+
     with st.sidebar:
         conversations_data = requests.get(
             CONVERSATIONS_URL,
@@ -287,18 +325,31 @@ else:
     # 메인 로직
 if st.session_state["is_login"]:
     if (
-        st.session_state["api_key_check"]
+        st.session_state["openai_api_key_check"]
         and st.session_state["file_check"]
         and st.session_state["openai_model_check"]
     ):
         if chosen_option != "Create Conversation":
-            llm = ChatOpenAI(
-                temperature=0.1,
-                streaming=True,
-                callbacks=[ChatCallbackHandler()],
-                model=st.session_state["openai_model"],
-                openai_api_key=st.session_state["api_key"],
-            )
+            if st.session_state["openai_model"] == AI_MODEL[1]:
+                llm = ChatOpenAI(
+                    temperature=0.1,
+                    streaming=True,
+                    callbacks=[ChatCallbackHandler()],
+                    model=st.session_state["openai_model"],
+                    openai_api_key=st.session_state["openai_api_key"],
+
+                )
+                print("you chose openai")
+            elif st.session_state["openai_model"] == AI_MODEL[2]:
+                llm = ChatAnthropic(
+                    temperature=0.1,
+                    streaming=True,
+                    callbacks=[ChatCallbackHandler()],
+                    model=st.session_state["openai_model"],
+                    anthropic_api_key=st.session_state["claude_api_key"],
+
+                )
+                print("you chose claude")
 
             prompt = ChatPromptTemplate.from_messages(
                 [
@@ -306,6 +357,7 @@ if st.session_state["is_login"]:
                         "system",
                         """
                         You are an AI that reads documents for me. Please answer based on the document given below. 
+                        Make sure to check every detail inside the document.
                         If the information is not in the document, answer the question with "The required information is not in the document." Never make up answers.
                         Please answer in the questioner's language 
                         
@@ -315,7 +367,6 @@ if st.session_state["is_login"]:
                     ("human", "{question}"),
                 ]
             )
-
             retriever = (
                 FileController.embed_file(
                     st.session_state["file_name"], st.session_state["file_path"]
@@ -332,9 +383,11 @@ if st.session_state["is_login"]:
                 message = st.chat_input("Ask anything about your file...")
 
                 if message:
-                    if re.match(
-                        API_KEY_PATTERN, st.session_state["api_key"]
-                    ) and re.match(MODEL_PATTERN, st.session_state["openai_model"]):
+                    if (
+                        re.match(API_KEY_PATTERN, st.session_state["openai_api_key"])
+                        or re.match(API_KEY_PATTERN, st.session_state["claude_api_key"])
+
+                    ) and (st.session_state["openai_model"] in AI_MODEL):
                         ChatMemory.send_message(message, "human")
                         chain = (
                             {
@@ -349,7 +402,7 @@ if st.session_state["is_login"]:
                         try:
                             with st.chat_message("ai"):
                                 ai_answer = chain.invoke(message)
-                                ChatMemory.save_message_db(ai_answer.content, "ai")
+
                         except Exception as e:
                             st.error(f"An error occurred: {e}")
                             st.warning(
@@ -405,7 +458,7 @@ if st.session_state["is_login"]:
                 on_click=SaveEnv.save_file,
             )
             if upload_request:
-                # 파일을 장고에 저장
+                # 파일을 장에 저장
 
                 os.makedirs("./.cache/files", exist_ok=True)
                 st.session_state["file_path"] = f"./.cache/files/{uploaded_file.name}"
@@ -427,36 +480,49 @@ if st.session_state["is_login"]:
                 else:
                     st.warning("문서를 업로드해주세요.")
         st.divider()
+
         st.text_input(
-            "API_KEY 입력",
+            "OpenAI API_KEY 입력",
             placeholder="sk-...",
-            on_change=SaveEnv.save_api_key,
-            key="api_key",
+            on_change=SaveEnv.save_openai_api_key,
+            key="openai_api_key",
         )
 
-        if st.session_state["api_key_check"]:
-            st.success("😄API_KEY가 저장되었습니다.😄")
+        if st.session_state["openai_api_key_check"]:
+            st.success("😄OpenAI API_KEY가 저장되었습니다.😄")
         else:
-            st.warning("API_KEY를 넣어주세요.")
+            st.warning("OpenAI API_KEY를 넣어주세요.")
 
         st.button(
-            "hary의 API_KEY (디버그용)",
-            on_click=Debug.my_api_key,
-            key="my_key_button",
+            "hary의 OpenAI API_KEY (디버그용)",
+            on_click=Debug.my_openai_api_key,
+            key="my_openai_key_button",
         )
-        st.divider()
-        st.selectbox(
-            "OpenAI Model을 골라주세요.",
-            options=OPENAI_MODEL,
+
+        st.text_input(
+            "Anthropic API_KEY 입력",
+            placeholder="sk-...",
+            on_change=SaveEnv.save_claude_api_key,
+            key="claude_api_key",
+        )
+
+        if st.session_state["claude_api_key_check"]:
+            st.success("😄Anthropic API_KEY가 저장되었습니다.😄")
+        else:
+            st.warning("Anthropic API_KEY를 넣어주세요.")
+
+
+            options=AI_MODEL,
             on_change=SaveEnv.save_openai_model,
             key="openai_model",
         )
 
         if st.session_state["openai_model_check"]:
-            st.success("😄모델이 선택되었습니다.😄")
+            st.success("😄모델이 선택되었니다.😄")
         else:
             st.warning("모델을 선택해주세요.")
         st.divider()
+
         st.write(
             """
                 Made by hary, seedjin298.
