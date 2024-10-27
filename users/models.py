@@ -1,16 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
-AI_MODEL = [
-    "선택해주세요",
-    "gpt-4o-mini-2024-07-18",
-    "claude-3-sonnet-20240229",
-]
-
-AI_PRICING_PER_MILLION_TOKENS = {
-    AI_MODEL[1]: 2.50,
-    AI_MODEL[2]: 3,
-}
+from utils.constants import AI_MODEL, AI_PRICING_PER_MILLION_TOKENS
 
 
 class User(AbstractUser):
@@ -39,6 +29,14 @@ class User(AbstractUser):
     )
     claude_api_key = models.CharField(
         max_length=200,
+        blank=True,
+    )
+    openai_tokens = models.IntegerField(
+        default=0,
+        blank=True,
+    )
+    claude_tokens = models.IntegerField(
+        default=0,
         blank=True,
     )
 
@@ -100,15 +98,9 @@ class User(AbstractUser):
         return total_messages
 
     def total_tokens(self):
-        total_tokens = 0
-        total_tokens_openai = 0
-        total_tokens_claude = 0
-
-        total_conversations = self.total_conversations()
-        for conversation in total_conversations:
-            total_tokens += conversation["total_tokens"]
-            total_tokens_openai += conversation["models"]["openai"]["tokens"]
-            total_tokens_claude += conversation["models"]["claude"]["tokens"]
+        total_tokens_openai = self.openai_tokens
+        total_tokens_claude = self.claude_tokens
+        total_tokens = total_tokens_openai + total_tokens_claude
 
         user_total_tokens = {
             "total_tokens": total_tokens,
@@ -118,15 +110,13 @@ class User(AbstractUser):
         return user_total_tokens
 
     def total_cost(self):
-        total_cost = 0
-        total_cost_openai = 0
-        total_cost_claude = 0
-
-        total_conversations = self.total_conversations()
-        for conversation in total_conversations:
-            total_cost += conversation["total_cost_per_1M_tokens"]
-            total_cost_openai += conversation["models"]["openai"]["cost_per_1M_tokens"]
-            total_cost_claude += conversation["models"]["claude"]["cost_per_1M_tokens"]
+        total_cost_openai = (
+            self.openai_tokens * AI_PRICING_PER_MILLION_TOKENS[AI_MODEL[1]]
+        )
+        total_cost_claude = (
+            self.claude_tokens * AI_PRICING_PER_MILLION_TOKENS[AI_MODEL[2]]
+        )
+        total_cost = total_cost_openai + total_cost_claude
 
         user_total_cost = {
             "total_cost_per_1M_tokens": total_cost,

@@ -43,6 +43,8 @@ class UserStatsSerializer(serializers.ModelSerializer):
             "user_total_cost",
             "user_total_messages",
             "total_files",
+            "openai_tokens",
+            "claude_tokens",
         )
 
     def get_user_total_conversations(self, user):
